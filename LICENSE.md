@@ -27,5 +27,3 @@ Nothing here is open source. The presence of code in a repository does not grant
 ---
 
 Questions about licensing or permitted use: zach@hackwithzach.com
-
-This document is a plain-language summary of Vigilantia Technologies INC's terms and is not a substitute for the full program terms of service or legal advice. Vigilantia should have its counsel review and finalize this text before public release.

@@ -31,5 +31,3 @@ You are an adult professional making your own decisions. Verify what you deploy,
 ---
 
 Questions: zach@hackwithzach.com
-
-This disclaimer is a template drafted for HackWithZach and is not legal advice. Vigilantia Technologies INC should have its own attorney review and finalize this language before public release.
