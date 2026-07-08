@@ -1,0 +1,16 @@
+# NEVER commit these. This is the line between settings and credentials.
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+*.pem
+.env
+
+# tfvars are blocked by default because they often carry secrets...
+*.tfvars
+# ...but these two carry ONLY non-sensitive flags and CIDRs, so they are safe
+# course files and MUST be published. Never put a credential in either one.
+!baseline.tfvars
+!hardened.tfvars
+!*.tfvars.example

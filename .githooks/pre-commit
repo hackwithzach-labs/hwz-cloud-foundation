@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# HackWithZach secret-scanning pre-commit hook.
+# Blocks a commit if it looks like a credential is about to be committed.
+# Enable once with:  git config core.hooksPath .githooks
+set -u
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+fail=0
+patterns=(
+  'A(KIA|SIA)[0-9A-Z]{16}'                 # AWS access key id
+  'aws_secret_access_key'                   # AWS secret key assignment
+  'sk_live_[0-9a-zA-Z]{10,}'                # Stripe live key
+  'whsec_[0-9a-zA-Z]{10,}'                  # Stripe webhook secret
+  'xox[baprs]-[0-9a-zA-Z-]{10,}'            # Slack token
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----'      # private key
+  'kit_v4_[0-9a-zA-Z]{10,}'                 # Kit api key
+  '(client_secret|api[_-]?key|password)\s*[:=]\s*["'"'"'][^"'"'"']{6,}'
+)
+
+for f in $staged; do
+  # skip files that legitimately CONTAIN the patterns: this hook, and the test fixtures
+  case "$f" in
+    .githooks/*|scan/fixtures/*) continue;;
+  esac
+  [ -f "$f" ] || continue
+  for p in "${patterns[@]}"; do
+    if git show ":$f" | grep -nEi "$p" >/dev/null 2>&1; then
+      echo "BLOCKED: possible secret in $f (pattern: $p)"
+      fail=1
+    fi
+  done
+  # block tfstate / real tfvars / .env outright
+  case "$f" in
+    *.tfstate|*.tfstate.*|*.env) echo "BLOCKED: $f must never be committed"; fail=1;;
+    *.tfvars) case "$f" in *baseline.tfvars|*hardened.tfvars|*.tfvars.example) ;; *) echo "BLOCKED: $f (tfvars may hold secrets)"; fail=1;; esac;;
+  esac
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo ""
+  echo "Commit blocked by HackWithZach secret scan. Remove the secret, or if this"
+  echo "is a false positive, review carefully and use: git commit --no-verify"
+  exit 1
+fi
+exit 0

@@ -1,0 +1,16 @@
+# Terraform state and vars: never commit these
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# local snapshots the scanner writes
+snapshot*.json
+!scan/fixtures/*.json
+.env
