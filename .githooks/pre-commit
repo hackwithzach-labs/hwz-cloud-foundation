@@ -21,7 +21,7 @@ patterns=(
 for f in $staged; do
   # skip files that legitimately CONTAIN the patterns: this hook, and the test fixtures
   case "$f" in
-    .githooks/*|scan/fixtures/*) continue;;
+    .githooks/*|*scan/fixtures/*) continue;;
   esac
   [ -f "$f" ] || continue
   for p in "${patterns[@]}"; do

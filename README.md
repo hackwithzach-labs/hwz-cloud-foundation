@@ -1,9 +1,8 @@
 <p align="center">
-  <img src="assets/hackwithzachlogo.jpg" alt="HackWithZach" width="120">
+  <img src="assets/hackwithzachlogo.jpg" alt="HackWithZach" width="130">
 </p>
 
 <h1 align="center">Cloud and AI Security Engineer: From Zero to Hired</h1>
-<p align="center"><strong>Module 1: The Cloud Foundation</strong></p>
 <p align="center">Cybersecurity Education That Gets You Hired, Promoted and Paid.</p>
 <p align="center"><em>Build it. Release it. Break it. Harden it.</em></p>
 
@@ -11,41 +10,49 @@
 
 > FULL COHORT MATERIAL. This repository is licensed to enrolled HackWithZach Full cohort members only. It is not part of the Light tier. Do not share, post, or redistribute it. See `LICENSE.md`.
 
-## What this is
+## What this repo is
 
-The cloud foundation for the flagship course, as one modular Terraform codebase you build, deploy, prove insecure, harden, and tear down with your own hands. This is the reference. In the course you build your own version of it from scratch, one component at a time, and prove each one with the scanner before moving on.
+The complete build repository for the Cloud and AI Security Engineer program. You build the whole system yourself, one module at a time. For each piece you build it, deploy it to a sandbox account, run the scanner to prove it insecure, harden it, prove it secure, and tear it down. You do not read about security here. You prove it with your own hands.
+
+Everything lives under the program folder:
+
+```
+Cloud-and-AI-Security-Engineer/
+  module-01-cloud-foundation/     <- start here
+  ...more modules added as the program runs
+```
 
 ## Read these first
 
 - `DISCLAIMER.md` before you deploy anything. Educational use, sandbox accounts only, you own the costs.
-- `SECURITY.md` for the no-secrets rules and the pre-commit hook.
-- `LICENSE.md` for what you may and may not do with this repo.
+- `SECURITY.md` for the no-secrets rules and the pre-commit secret scan.
+- `LICENSE.md` for what you may and may not do with this material.
 
-## The material
-
-| File | What it is |
-|---|---|
-| `TEACH.md` | The chapter. Starts with the whole picture, then builds. |
-| `HARDEN.md` | The hardening pass, control by control. |
-| `RUNBOOK.md` | The five-move live loop: deploy, scan, harden, scan, destroy. |
-| `HOMEWORK.md` | The week-1 co-build assignment. |
-| `GIT_SETUP.md` | Turn this into your own git repo. |
-| `foundation/` | The modular Terraform: VPC, KMS, IAM, S3, Secrets, CloudTrail, observability. |
-| `scan/` | `hwz-scan`, the scanner that proves the stack insecure, then secure. |
-
-## The loop, in one breath
+## Turn on the secret scan (once per clone)
 
 ```bash
-git config core.hooksPath .githooks          # turn on the secret-scan hook
-cd foundation && terraform init
-terraform apply -var-file=baseline.tfvars     # build the weak stack
-cd .. && python3 scan/scan.py                 # prove it insecure (FAIL)
-cd foundation && terraform apply -var-file=hardened.tfvars
-cd .. && python3 scan/scan.py                 # prove it secure (PASS)
-cd foundation && terraform destroy -var-file=hardened.tfvars
+git config core.hooksPath .githooks
 ```
 
-Full detail in `RUNBOOK.md`.
+## Program modules
+
+| Module | Folder | Status |
+|---|---|---|
+| 1. The Cloud Foundation | `Cloud-and-AI-Security-Engineer/module-01-cloud-foundation` | Ready |
+| 2. API Security on the foundation | | Coming |
+| 3. Observability and Detection | | Coming |
+| 4. Pillar 1: LLM Security | | Coming |
+| 5. Pillar 2: AI APIs and MCP | | Coming |
+| 6. Pillar 3: Agentic AI | | Coming |
+| 7. Pillar 4: Vibe Coding | | Coming |
+| 8. Capstone: all pillars, one foundation | | Coming |
+
+## Start now
+
+```bash
+cd Cloud-and-AI-Security-Engineer/module-01-cloud-foundation
+# read README.md, then TEACH.md, then follow RUNBOOK.md
+```
 
 ---
 
