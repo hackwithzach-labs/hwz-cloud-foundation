@@ -1,9 +1,9 @@
-# Runbook: prove the loop on real AWS
+# Runbook: the four-step lab on real AWS
 
-This is the loop the whole course runs on. You build it, deploy it, prove it is
-insecure with the scanner, harden it, prove it is secure, then tear it down. Do
-this once here on the foundation and you know the machinery works. Every pillar
-repeats the same five moves.
+This is the loop every project and pillar in the program runs on. You deploy the
+insecure stack, scan it to prove it insecure, fix it with a script, then run the
+same scan again and watch it pass. Same four steps everywhere. `LESSON.md`
+explains the code behind each step. Do it once here and you know the machinery.
 
 Use an ISOLATED SANDBOX AWS account. Not production. Not your employer's.
 
@@ -37,31 +37,49 @@ Expect a FAIL with roughly a dozen findings and a non-zero exit code. Read every
 one. Open the console and confirm the finding is real. This is the break step:
 you are attacking your own build by looking at it the way an auditor would.
 
-## 3. Harden it
+## 3. Fix it with the remediation script
 
 ```bash
-cd foundation
-terraform plan  -var-file=hardened.tfvars     # read the diff first
-terraform apply -var-file=hardened.tfvars -auto-approve
-cd ..
+# get the foundation KMS key ARN for the encryption fixes
+KEY=$(cd foundation && terraform output -raw kms_key_arn)
+
+python3 fix/fix.py --project hwz --region us-east-1                      # dry run: see the plan
+python3 fix/fix.py --project hwz --region us-east-1 --kms-key-arn "$KEY" --commit
 ```
 
-## 4. Prove it is secure
+The dry run prints every remediation and the exact AWS API call it makes, and
+changes nothing. Read it. Then `--commit` applies the fixes. It is idempotent, so
+running it again is safe. `LESSON.md` explains how the script works.
+
+## 4. Prove it is secure (same scan as step 2)
 
 ```bash
 python3 scan/scan.py --project hwz --region us-east-1
 ```
 
-Expect PASS, zero findings, exit code 0. Same scanner, same account, different
-posture. The delta between step 2 and step 4 is the security lesson, made real.
+Expect PASS, zero findings, exit code 0. Same scanner, same account, opposite
+result. The delta between step 2 and step 4 is the security lesson, made real.
 
 ## 5. Tear it down
 
 ```bash
 cd foundation
-terraform destroy -var-file=hardened.tfvars -auto-approve
+terraform destroy -var-file=baseline.tfvars -auto-approve
 cd ..
 ```
+
+## The infrastructure-as-code alternative to step 3
+
+The fix script remediates a live account, which is what you do in an incident.
+To make the same fixes permanent and version-controlled, apply the hardened
+variables instead and re-scan:
+
+```bash
+cd foundation && terraform apply -var-file=hardened.tfvars -auto-approve && cd ..
+python3 scan/scan.py            # also PASS
+```
+
+The program teaches both: remediate live now, then codify so it never regresses.
 
 Always destroy when you finish a session. A lab left running is a bill and a risk.
 
@@ -70,11 +88,14 @@ Always destroy when you finish a session. A lab left running is a bill and a ris
 You can prove the scanner logic itself any time, with no account:
 
 ```bash
-python3 scan/scan.py --selftest
+python3 scan/scan.py --selftest    # checks catch the insecure fixture, pass the secure one
+python3 fix/fix.py  --selftest     # proves the fix closes every finding the scan reports
 ```
 
-It runs the checks against a known-insecure and a known-secure fixture and
-confirms the insecure one fails and the secure one passes.
+The scanner selftest runs the checks against a known-insecure and a known-secure
+fixture. The fix selftest applies the remediation to the insecure fixture and
+confirms the scanner then finds nothing, so you know the fix closes exactly what
+the scan opens before you run anything live.
 
 ---
 

@@ -23,16 +23,27 @@ At the repository root (two levels up from this module):
 - `SECURITY.md` for the no-secrets rules and the pre-commit hook.
 - `LICENSE.md` for what you may and may not do with this repo.
 
+## The four-step lab (the format for every project)
+
+1. Deploy the insecure stack (`foundation/`, Terraform) and understand why each piece is insecure.
+2. Scan it with `scan/scan.py` to identify the insecure structure.
+3. Fix it with `fix/fix.py` to remediate every finding.
+4. Run the same scan again and watch every check pass. Then tear it down.
+
+Every step is explained in `LESSON.md`, and every script is validated offline (`--selftest`) so the fix provably closes exactly what the scan flags.
+
 ## The material (in this module folder)
 
 | File | What it is |
 |---|---|
 | `TEACH.md` | The chapter. Starts with the whole picture, then builds. |
+| `LESSON.md` | The four-step lab, with the code behind each step explained. |
+| `RUNBOOK.md` | The exact commands: deploy, scan, fix, scan, destroy. |
 | `HARDEN.md` | The hardening pass, control by control. |
-| `RUNBOOK.md` | The five-move live loop: deploy, scan, harden, scan, destroy. |
 | `HOMEWORK.md` | The week-1 co-build assignment. |
 | `foundation/` | The modular Terraform: VPC, KMS, IAM, S3, Secrets, CloudTrail, observability. |
-| `scan/` | `hwz-scan`, the scanner that proves the stack insecure, then secure. |
+| `scan/` | `hwz-scan`, the scanner that identifies insecure structure (steps 2 and 4). |
+| `fix/` | `hwz-fix`, the remediation script that closes every finding (step 3). |
 
 ## The loop, in one breath
 

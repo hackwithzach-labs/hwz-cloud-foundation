@@ -12,7 +12,18 @@
 
 ## What this repo is
 
-The complete build repository for the Cloud and AI Security Engineer program. You build the whole system yourself, one module at a time. For each piece you build it, deploy it to a sandbox account, run the scanner to prove it insecure, harden it, prove it secure, and tear it down. You do not read about security here. You prove it with your own hands.
+The complete build repository for the Cloud and AI Security Engineer program. You build the whole system yourself, one module at a time. You do not read about security here. You prove it with your own hands.
+
+## The format of every project and pillar
+
+Every project and pillar in this program, cloud and AI alike, follows the same four steps. This is the standard. Do not expect a finished secure system handed to you. You build the insecure one and fix it yourself.
+
+1. Deploy the insecure stack. The code is explained, so you understand how it works and why it is insecure.
+2. Run the scan script to identify the insecure structure. You can run it as many times as you want, and the code is explained so you understand exactly how it detects each problem.
+3. Run the fix script to remediate the findings. Repeatable and idempotent, and the code is explained so you understand exactly how each fix works.
+4. Run the same scan script from step 2 again. Every check now passes.
+
+Two guarantees hold for every project. Everything is explained, in a `LESSON.md` and in commented scripts. And everything is validated before you touch AWS: each project's scan and fix scripts ship with an offline `--selftest` that proves the fix closes exactly what the scan flags, so you are never running unproven code against your account.
 
 Everything lives under the program folder:
 
