@@ -11,7 +11,8 @@ resource "random_id" "suffix" {
 }
 
 resource "aws_s3_bucket" "this" {
-  bucket = "${var.name_prefix}-data-${random_id.suffix.hex}"
+  bucket        = "${var.name_prefix}-data-${random_id.suffix.hex}"
+  force_destroy = true # lab convenience: allow terraform destroy even if objects exist
 }
 
 resource "aws_s3_bucket_versioning" "this" {

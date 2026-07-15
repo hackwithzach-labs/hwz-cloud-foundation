@@ -12,7 +12,7 @@
 #   cloudtrail  ->  an account trail with its OWN correctly-policied log bucket
 #   observability -> a CloudWatch log group flow logs and apps write to
 #
-# Each pillar later ships its own root that calls only the modules it needs.
+# Each pillar later brings its own root that calls only the modules it needs.
 # This foundation root calls all seven so you can see the whole board.
 ###############################################################################
 

@@ -61,8 +61,17 @@ locals {
     }
   }
 
-  base_statements = var.strict_key_policy ? local.strict_statements : local.baseline_statements
-  all_statements  = var.allow_cloudtrail ? concat(local.base_statements, [local.cloudtrail_statement]) : local.base_statements
+  # Terraform requires both arms of a conditional to be the same type, and these
+  # statement lists differ in length and shape on purpose. The concat-with-empty
+  # pattern below picks one list without ever asking Terraform to unify them.
+  base_statements = concat(
+    var.strict_key_policy ? [] : local.baseline_statements,
+    var.strict_key_policy ? local.strict_statements : [],
+  )
+  all_statements = concat(
+    local.base_statements,
+    var.allow_cloudtrail ? [local.cloudtrail_statement] : [],
+  )
 }
 
 resource "aws_kms_key" "this" {

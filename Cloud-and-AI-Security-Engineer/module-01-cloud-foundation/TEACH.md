@@ -62,41 +62,28 @@ Or it can be broken by omission, where the code references a security group that
 
 The old cloud chapter was broken by omission. It was reverse-engineered from a working system down into stripped-back pieces, and the pieces no longer fit. This foundation is weak by policy. Every module is complete. Every variable is declared. Every output exists. The CloudTrail bucket policy is correct and the trail waits for it with a `depends_on`. The Bedrock-ready private subnets are there from the first apply. It runs clean, and it is wide open, and those two facts are both true at once. Hold onto that distinction, because it is the difference between a lab that builds confidence and a lab that destroys it.
 
+## Why the command line and code, not the console
+
+You could build all of this by clicking through the AWS console. You are not going to, and understanding why is itself a senior skill. Every resource in this program is declared as code, in this repository, and deployed from the command line. The console is where you look, not where you build.
+
+Here is what infrastructure as code gives you that clicking never will.
+
+It is reproducible. The same code produces the same environment every time, on any machine, for any person. A console build is a sequence of clicks nobody wrote down, and two people get two different results neither can prove.
+
+It is version controlled. The infrastructure lives in git, so every change is a diff with an author, a date, and a reason, and you can roll back. The console keeps no history of who changed what or why.
+
+It can be reviewed before it is real. Code goes through a pull request so a second person catches the mistake before it reaches AWS. A console change is live the instant you click it.
+
+It has no drift. Manual tweaks pull an environment away from any documented state, and nobody remembers them. With code, the code is the truth and drift is detectable: `terraform plan` shows what changed by hand. It is the same reason the scanner in this program works. You can scan code and state. You cannot scan someone's memory of what they clicked.
+
+It tears down clean. One command removes everything. Clicking to delete always misses something, an orphaned interface, a security group, a log group, that keeps costing money and stays as attack surface.
+
+And it is the source of your security. Encryption, network rules, and permissions are written, reviewed, and scanned. Secrets never get typed into a console field.
+
+The concrete errors this avoids are the ones that cause real incidents: the wrong region selected, a single missed checkbox like Block Public Access that makes a bucket public, a typo in a CIDR that opens a network path, settings that drift between environments, steps done in the wrong order or forgotten, a change made once and never repeatable. Every one is a click-ops failure, and every one is designed out when the environment is declared once in reviewed code and applied the same way every time.
+
+The honest nuance: the console is fine for reading. Investigating an incident, watching a metric, confirming a scanner finding. Use it to look. Never use it to build. Building is always code, in the repository, from the command line.
+
 ## Why it is modular
 
-The foundation is not one giant template that every pillar inherits whole. If it were, Pillar 1 would drag in a CloudTrail bucket it never uses and Pillar 3 would duplicate a VPC that already exists, and you would end up with sprawl, redundant resources, and tangled dependencies. That is the trap of a single golden template.
-
-Instead the foundation is seven independent modules with clean inputs and outputs. Each pillar ships its own root configuration that calls only the modules it needs and reads the outputs it cares about. Pillar 2 pulls the VPC and the KMS key. Pillar 4 might pull only S3 and the log group. Same foundation, composed differently per pillar. That is horizontal, five small stacks that share a base, not one vertical monolith. It is how real teams keep a cloud estate sane, and it is why the network, the key, and the logging you build once here will carry you through all four pillars without a rebuild.
-
-## The module map
-
-| Module | Why it exists | Which pillar leans on it hardest |
-|---|---|---|
-| `vpc` | Somewhere private for models and agents to run | Pillar 2 (Bedrock endpoint in the private subnets) |
-| `kms` | One key to encrypt data, secrets, memory, and logs | All four |
-| `iam` | An identity your apps assume, scoped or not | All four |
-| `s3` | Where data, artifacts, and logs land | Pillars 1, 2, 4 |
-| `secrets` | Credentials out of code and into a vault | Pillars 2, 3 |
-| `cloudtrail` | The record of what happened, tamper-evident | All four, and every incident you will ever work |
-| `observability` | The log groups your apps and network write to | All four |
-
-Open the `foundation/` folder, read `README.md`, and you will see these seven modules and the single root that wires them together in `main.tf`. Read `main.tf` first. It is the picture at the top of this page, written as code.
-
-## Do this now
-
-1. Read `foundation/README.md`.
-2. Read `foundation/main.tf`. Match each `module` block to the diagram above.
-3. Run the weak stack. Confirm it applies clean.
-4. Break it. Find every hole and write down what each one lets an attacker do.
-5. Read `HARDEN.md`, flip to `hardened.tfvars`, read the plan, apply, and confirm the holes are closed.
-6. Tear it down.
-
-Your homework for the week is in `HOMEWORK.md`. Bring your questions and your plan output to the call.
-
----
-
-By Zach Marcy. Cybersecurity Architect and Mentor. 20+ years in IT, 6 in cybersecurity. I design and secure cloud environments that deploy and secure APIs and AI.
-
-Cybersecurity Education That Gets You Hired, Promoted and Paid.
-
-© 2026 Vigilantia Technologies INC. All rights reserved. "HackWithZach" and the HackWithZach logo are trademarks of Vigilantia Technologies INC.
+The foundation is not one giant template that every pillar inherits whole. If it were, Pillar 1 would drag in a CloudTrail bucket it never uses and Pillar 3 would duplicate a VPC that already exi
