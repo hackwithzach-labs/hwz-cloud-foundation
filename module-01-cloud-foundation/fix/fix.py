@@ -44,7 +44,7 @@ def plan(snapshot):
         if not b.get("block_public_access"):
             actions.append(("s3", n, "Enable Block Public Access (PutPublicAccessBlock)"))
         if not b.get("tls_only_policy"):
-            actions.append(("s3", n, "Attach TLS-only deny bucket policy (PutBucketPolicy)"))
+            actions.append(("s3", n, "Merge TLS-only deny into bucket policy (GetBucketPolicy + PutBucketPolicy)"))
         if not b.get("versioning"):
             actions.append(("s3", n, "Enable versioning (PutBucketVersioning)"))
 
@@ -76,7 +76,7 @@ def plan(snapshot):
         if not t.get("data_events"):
             actions.append(("cloudtrail", n, "Record S3 data events (PutEventSelectors)"))
         if not t.get("kms_encrypted"):
-            actions.append(("cloudtrail", n, "Encrypt trail logs with KMS (UpdateTrail)"))
+            actions.append(("cloudtrail", n, "Grant CloudTrail on the key, then encrypt trail logs (PutKeyPolicy + UpdateTrail)"))
     return actions
 
 
@@ -112,15 +112,48 @@ def snapshot_after_fix(snapshot):
 # PART B: the LIVE remediations (boto3). Only run with --commit.
 # Each function is the exact API call, commented with the why.
 # ---------------------------------------------------------------------------
-def _tls_only_policy(bucket_arn):
-    return json.dumps({
-        "Version": "2012-10-17",
-        "Statement": [{
-            "Sid": "DenyInsecureTransport", "Effect": "Deny", "Principal": "*",
+def _merge_tls_statement(s3, bucket, bucket_arn):
+    """Merge the TLS-only deny into whatever policy the bucket already has.
+
+    PutBucketPolicy REPLACES the entire policy document. It never appends.
+    Overwrite a policy that a service depends on and you break that service:
+    CloudTrail's permission to deliver logs lives in its log bucket's policy,
+    so replacing it with only a TLS deny silently stops audit logging and
+    makes UpdateTrail fail with InsufficientS3BucketPolicyException.
+    The rule in any account, lab or production: read, merge, then write."""
+    stmt = {"Sid": "DenyInsecureTransport", "Effect": "Deny", "Principal": "*",
             "Action": "s3:*", "Resource": [bucket_arn, bucket_arn + "/*"],
-            "Condition": {"Bool": {"aws:SecureTransport": "false"}}
-        }]
-    })
+            "Condition": {"Bool": {"aws:SecureTransport": "false"}}}
+    try:
+        doc = json.loads(s3.get_bucket_policy(Bucket=bucket)["Policy"])
+    except Exception:
+        doc = {"Version": "2012-10-17", "Statement": []}
+    statements = doc.get("Statement", [])
+    if any(x.get("Sid") == "DenyInsecureTransport" for x in statements):
+        return  # idempotent: already merged
+    statements.append(stmt)
+    doc["Statement"] = statements
+    s3.put_bucket_policy(Bucket=bucket, Policy=json.dumps(doc))
+
+
+def _allow_cloudtrail_on_key(kms, kms_key_arn, trail_arn):
+    """Let CloudTrail use the key before pointing the trail at it.
+
+    UpdateTrail with KmsKeyId validates, at call time, that the KEY POLICY
+    allows cloudtrail.amazonaws.com to encrypt. IAM policies are not enough:
+    KMS authorization starts at the key policy. Same rule as bucket policies
+    applies here: read the existing policy, merge one statement, write back."""
+    key_id = kms_key_arn.split("/")[-1]
+    doc = json.loads(kms.get_key_policy(KeyId=key_id, PolicyName="default")["Policy"])
+    if any(x.get("Sid") == "AllowCloudTrailEncrypt" for x in doc.get("Statement", [])):
+        return  # idempotent: already granted
+    doc["Statement"].append({
+        "Sid": "AllowCloudTrailEncrypt", "Effect": "Allow",
+        "Principal": {"Service": "cloudtrail.amazonaws.com"},
+        "Action": ["kms:GenerateDataKey*", "kms:DescribeKey", "kms:Decrypt"],
+        "Resource": "*",
+        "Condition": {"StringEquals": {"aws:SourceArn": trail_arn}}})
+    kms.put_key_policy(KeyId=key_id, PolicyName="default", Policy=json.dumps(doc))
 
 
 def apply_live(snapshot, project, region, kms_key_arn):
@@ -150,8 +183,8 @@ def apply_live(snapshot, project, region, kms_key_arn):
                 "BlockPublicPolicy": True, "RestrictPublicBuckets": True})
             done.append(f"s3 {n}: public access blocked")
         if not b.get("tls_only_policy"):
-            s3.put_bucket_policy(Bucket=n, Policy=_tls_only_policy(arn))
-            done.append(f"s3 {n}: TLS-only policy")
+            _merge_tls_statement(s3, n, arn)
+            done.append(f"s3 {n}: TLS-only statement merged into bucket policy")
         if not b.get("versioning"):
             s3.put_bucket_versioning(Bucket=n, VersioningConfiguration={"Status": "Enabled"})
             done.append(f"s3 {n}: versioning on")
@@ -207,6 +240,8 @@ def apply_live(snapshot, project, region, kms_key_arn):
         if not t.get("log_file_validation"):
             kw["EnableLogFileValidation"] = True
         if not t.get("kms_encrypted") and kms_key_arn:
+            trail_arn = f"arn:aws:cloudtrail:{region}:{acct}:trail/{t['name']}"
+            _allow_cloudtrail_on_key(kms, kms_key_arn, trail_arn)
             kw["KmsKeyId"] = kms_key_arn
         if kw:
             ct.update_trail(Name=t["name"], **kw)
