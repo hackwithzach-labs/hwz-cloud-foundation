@@ -1,0 +1,11 @@
+hwz-course-repo
+version: 2026.07.22b
+source commit: 949bce4 (restructure: flatten modules to repo root, add module-02 api-security)
+modules: module-01-cloud-foundation, module-02-api-security
+snapshot additions:
+  - diagrams/ starter templates for module-01 and module-02 (Teaching Standard v1.1)
+  - tfplan ignore patterns (root + foundation .gitignore)
+  - REPO_GUIDE.md
+  - module-02 is the build target for Chapter 9 (API Security Foundations)
+
+Rebuild and re-upload this zip on every repo release. Sequencing and paths: V4_DEPLOY_CHECKLIST.

@@ -5,6 +5,15 @@
 !*.tfvars.example
 .terraform/
 .terraform.lock.hcl
+# Plan files: a plan file is a zip with an embedded state snapshot.
+# The pair *.tfplan AND tfplan* matters: the file actually created is often
+# named just "tfplan", which slips past *.tfplan.
+*.tfplan
+tfplan*
+plan.out
+crash.log
+*.pem
+*credentials*
 # Python
 __pycache__/
 *.pyc

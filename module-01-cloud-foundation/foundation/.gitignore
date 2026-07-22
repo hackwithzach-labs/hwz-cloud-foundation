@@ -7,6 +7,13 @@ crash.log
 *.pem
 .env
 
+# Plan files: a plan file is a zip with an embedded state snapshot, including
+# your account ID and every ARN. The pair *.tfplan AND tfplan* matters: the
+# file actually created is often named just "tfplan", which slips past *.tfplan.
+*.tfplan
+tfplan*
+plan.out
+
 # tfvars are blocked by default because they often carry secrets...
 *.tfvars
 # ...but these two carry ONLY non-sensitive flags and CIDRs, so they are safe
