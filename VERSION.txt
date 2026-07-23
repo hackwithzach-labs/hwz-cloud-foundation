@@ -1,5 +1,5 @@
 hwz-course-repo
-version: 2026.07.22b
+version: 2026.07.23a
 source commit: 949bce4 (restructure: flatten modules to repo root, add module-02 api-security)
 modules: module-01-cloud-foundation, module-02-api-security
 snapshot additions:
@@ -7,5 +7,9 @@ snapshot additions:
   - tfplan ignore patterns (root + foundation .gitignore)
   - REPO_GUIDE.md
   - module-02 is the build target for Chapter 9 (API Security Foundations)
+  - app/minimal.py: irreducible provision-first API for the Chapter 9 build-along
+  - module-02 DEPLOY.md: full AWS deployment walkthrough (Teaching Standard v1.2 rule 6)
+  - app/main.py: opt-in real Bedrock path (HWZ_USE_REAL_MODEL) + boto3 dep
+  - credentials: IAM Identity Center SSO short-lived login everywhere; no stored access keys (Teaching Standard v1.3 rule 7)
 
 Rebuild and re-upload this zip on every repo release. Sequencing and paths: V4_DEPLOY_CHECKLIST.

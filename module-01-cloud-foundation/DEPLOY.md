@@ -44,21 +44,29 @@ terraform version
 python --version
 ```
 
-## Part 3: give Terraform credentials to your sandbox
+## Part 3: give the CLI short-lived credentials, without storing a secret
 
-Terraform and the scripts act as you, using AWS credentials from your CLI configuration. You need an access key for an identity in the sandbox account.
+Terraform and the scripts act as you, using the credentials your CLI holds. We do NOT store a long-lived credential to do this. Writing an access key to `~/.aws/credentials` is exactly `T1552.001`, credentials in files, the technique this whole foundation defends against, so we use AWS IAM Identity Center with short-lived login instead: you log in once per session, the credentials expire in hours, and nothing secret lands on disk.
 
-1. In the AWS console of the sandbox account, open IAM, create a user (for example `hwz-lab`), and give it programmatic access. For a throwaway sandbox, attach the `AdministratorAccess` policy. This is deliberately broad because it is a disposable lab account; you would never do this in production, and later chapters teach exactly why.
-2. Create an access key for that user and copy the key ID and secret once.
-3. Configure the CLI:
+1. In the sandbox account console, open IAM Identity Center and enable it. On a fresh standalone account this also creates an AWS Organization with this account as its management account, which is fine for a lab. Create a user for yourself, create a permission set (`AdministratorAccess` for this disposable lab), and assign your user to the account with that permission set. Copy the AWS access portal "start URL" from the dashboard.
+
+2. Configure the CLI for SSO, once. This writes only the portal URL, region, and role name to `~/.aws/config`, no secret:
 
 ```powershell
-aws configure
-# AWS Access Key ID:     <paste>
-# AWS Secret Access Key: <paste>
-# Default region name:   us-east-1
-# Default output format:  json
+aws configure sso
+# SSO start URL:  <paste the portal URL>
+# SSO region:     us-east-1
+# then pick the account + AdministratorAccess permission set, and name the profile: hwz-lab
 ```
+
+3. Log in at the start of each session, and point everything at the profile:
+
+```powershell
+aws sso login --profile hwz-lab
+$env:AWS_PROFILE = "hwz-lab"      # macOS/Linux: export AWS_PROFILE=hwz-lab
+```
+
+`aws sso login` opens your browser; approve it and the CLI caches a short-lived token that expires on its own. Terraform, boto3, and the scanner all read this profile natively.
 
 4. Confirm you are pointed at the right account. This should print the sandbox account ID:
 
@@ -66,7 +74,7 @@ aws configure
 aws sts get-caller-identity
 ```
 
-Look at the `Account` field and make sure it is the sandbox, not somewhere real. This one check prevents almost every bad-day scenario.
+Look at the `Account` field and make sure it is the sandbox, not somewhere real. This one check prevents almost every bad-day scenario. If a command later fails with an expired-token error, that is the design working; run `aws sso login --profile hwz-lab` again.
 
 ## Part 4: get the repository and set up Python
 

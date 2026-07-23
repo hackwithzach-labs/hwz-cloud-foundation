@@ -111,6 +111,45 @@ def mock_model_complete(prompt, max_tokens):
     return (f"[mock completion for {prompt[:40]!r}]", total_tokens, cost)
 
 
+def real_model_complete(prompt, max_tokens):
+    """Optional REAL Bedrock call. Opt in with HWZ_USE_REAL_MODEL=true, and only
+    in the hardened profile. Pinned to the cheapest model (Claude 3 Haiku by
+    default); max_tokens is already clamped by safety_breaker() before we get
+    here. boto3 is imported lazily so the mock path needs no AWS dependency.
+
+    The call goes out through the Bedrock interface endpoint the Terraform root
+    put in your private subnets, using the least-privilege API role. Nothing
+    about the four controls changes: same request in, same completion out."""
+    import os
+    import boto3
+
+    model_id = os.environ.get("HWZ_MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
+    region = os.environ.get("AWS_REGION", "us-east-1")
+    client = boto3.client("bedrock-runtime", region_name=region)
+    payload = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": max_tokens,
+        "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+    }
+    resp = client.invoke_model(modelId=model_id, body=json.dumps(payload))
+    data = json.loads(resp["body"].read())
+    text = data["content"][0]["text"]
+    usage = data.get("usage", {})
+    in_tok = usage.get("input_tokens", len(prompt.split()))
+    out_tok = usage.get("output_tokens", 0)
+    # Haiku on-demand pricing (approx): $0.00025 / 1k input, $0.00125 / 1k output.
+    cost = in_tok * 0.00000025 + out_tok * 0.00000125
+    return text, in_tok + out_tok, cost
+
+
+def model_complete(prompt, max_tokens):
+    """Pick the model. Mock by default (free, offline); real Bedrock only when
+    you have opted in AND deployed the Terraform root. See DEPLOY.md."""
+    if config.USE_REAL_MODEL:
+        return real_model_complete(prompt, max_tokens)
+    return mock_model_complete(prompt, max_tokens)
+
+
 @app.post("/v1/complete")
 async def complete(request: Request, authorization: str | None = Header(default=None)):
     claims = authenticate(authorization)
@@ -136,7 +175,7 @@ async def complete(request: Request, authorization: str | None = Header(default=
     req_tokens = safety_breaker(req_tokens)
     _model_calls["n"] += 1
 
-    completion, used_tokens, cost = mock_model_complete(str(prompt), req_tokens)
+    completion, used_tokens, cost = model_complete(str(prompt), req_tokens)
     audit({"token_id": token_id, "audience": claims.get("aud"),
            "prompt_len": len(str(prompt)), "tokens": used_tokens,
            "cost_usd": round(cost, 5), "outcome": "ok"})

@@ -32,6 +32,10 @@ Here is the whole picture. The module-1 foundation you already built and proved 
 
 Read that top to bottom. The API is not floating. It assumes a least-privilege role from the foundation, it reads its credential from the foundation's Secrets Manager, and in the real deployment it reaches the model through a Bedrock endpoint sitting in the foundation's private subnets. You do not rebuild any of that. You compose it, pinned hardened, because you proved it in Chapter 8.
 
+## Build it before you break it
+
+Do not start with the weak app or the hardened app. Start with `app/minimal.py`, the irreducible inference API: about twenty lines, a prompt in and a completion out, no security at all. Run it (`uvicorn app.minimal:app --port 8000`) and send it a request, and watch a completion come back. Then read those twenty lines as the eight hops a request travels, and notice that four hops, who is calling, is the input sane, has this caller had enough, and did we record it, ask no question at all. Those four open hops are the four controls below. You are not bolting new stages onto the pipeline; you are guarding hops you have already watched a request pass through. That is why this module builds the API before it secures it: you cannot defend a pipeline you have never seen a request travel.
+
 ## The four controls, and the four attacks
 
 Every control exists to stop one specific attack, and the attack script runs all four so you see the pairing with your own eyes.

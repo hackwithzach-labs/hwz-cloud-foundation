@@ -4,12 +4,36 @@ Same four-step loop as Module 1, now on the inference API. Use an ISOLATED
 SANDBOX AWS account for the Terraform part. The app + attack loop runs locally
 at zero cost, so do that first to learn the moves.
 
-## 0. Zero-cost warm-up (no server, no AWS)
+## 0. Provision the API and watch it work (build BEFORE you break)
+
+Set up the environment, stand up the MINIMAL API (no security), and send it a
+real request. You secure what you understand, so meet the pipeline first.
 
 ```bash
 cd module-02-api-security
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r app/requirements.txt
+
+uvicorn app.minimal:app --port 8000      # terminal 1: the irreducible API, no controls
+```
+
+In a second terminal, send it a request and watch a completion come back:
+
+```bash
+curl -s localhost:8000/v1/complete -H "Content-Type: application/json" \
+  -d '{"prompt": "hello there how are you", "max_tokens": 20}'
+# -> {"completion":"[mock completion for 'hello there how are you']","tokens":25,"cost_usd":0.0005}
+```
+
+Read `app/minimal.py` top to bottom (about 20 lines). The numbered comments are
+the eight hops a request travels. Four of them, who-is-calling, is-input-sane,
+has-this-caller-had-enough, and did-I-record-it, ask no question at all. Those
+four open hops are the four controls you add next. Stop the minimal server
+(Ctrl+C) when you have seen it work.
+
+## 0b. Zero-cost warm-up: prove the attack logic (no server)
+
+```bash
 python3 attack/attack.py --selftest      # proves the attack logic. Expect PASS.
 ```
 
