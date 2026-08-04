@@ -24,16 +24,21 @@ locals {
   # Hardened: root keeps admin, the workload role gets data-plane use only.
   strict_statements = [
     {
-      Sid       = "RootAdmin"
+      # The account root keeps full control of ITS OWN key. This is the standard
+      # AWS "Enable IAM User Permissions" statement, and AWS explicitly warns
+      # against removing it: doing so locks the account out of its own key. The
+      # earlier version of this policy listed only admin actions and dropped
+      # kms:Decrypt / kms:GenerateDataKey -- which locked root (and Terraform,
+      # which runs as root) out of reading the KMS-encrypted secret, so every
+      # subsequent apply failed at refresh with "Access to KMS is not allowed".
+      # Root access here is not "broad": it is still gated by IAM. Least
+      # privilege for WORKLOADS is enforced by the scoped WorkloadUse statement
+      # below, which is where that lesson belongs.
+      Sid       = "EnableRootAccount"
       Effect    = "Allow"
       Principal = { AWS = local.root_arn }
-      Action = [
-        "kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*",
-        "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*",
-        "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource",
-        "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"
-      ]
-      Resource = "*"
+      Action    = "kms:*"
+      Resource  = "*"
     },
     {
       Sid       = "WorkloadUse"
