@@ -183,6 +183,16 @@ def collect_live(project, region):
             meta = kms.describe_key(KeyId=kid)["KeyMetadata"]
             if meta.get("KeyManager") != "CUSTOMER":
                 continue
+            # Scope to this lab's own keys by tag, exactly like the S3, EC2, VPC
+            # and CloudTrail collectors above. Without this the scanner reaches
+            # OUT of your lab and flags every unrelated customer-managed key in
+            # the account (an old experiment, another project) as a false
+            # finding -- which breaks the promise at the top of this file that
+            # "the scanner never touches anything but your lab".
+            tags = {t["TagKey"]: t["TagValue"]
+                    for t in kms.list_resource_tags(KeyId=kid).get("Tags", [])}
+            if tags.get("Project") != tagval:
+                continue
             rot = kms.get_key_rotation_status(KeyId=kid).get("KeyRotationEnabled", False)
             snap["kms_keys"].append({"id": kid, "rotation": rot})
         except Exception: pass

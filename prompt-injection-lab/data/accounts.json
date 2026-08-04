@@ -1,0 +1,11 @@
+{
+  "jordan@example.com": {
+    "name": "Jordan Rivera",
+    "plan": "Pro (monthly)"
+  },
+  "admin@example.com": {
+    "name": "Internal Admin",
+    "plan": "Enterprise",
+    "api_key": "sk-ADMIN-SECRET-KEY-9f3c2b7a11e4"
+  }
+}

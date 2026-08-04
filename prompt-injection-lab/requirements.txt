@@ -1,0 +1,15 @@
+# The offline simulation backend (default) needs nothing but the stdlib.
+# The Ollama backend also needs nothing but the stdlib (talks over localhost).
+# Install only what you actually use:
+
+# The GUI support console (app.py):
+flask>=3.0.0         # python app.py -> http://localhost:5000
+
+# Real-model backends (pick one):
+anthropic>=0.39.0    # HWZ_BACKEND=anthropic
+boto3>=1.34.0        # HWZ_BACKEND=bedrock
+# HWZ_BACKEND=ollama needs `ollama serve` + `ollama pull llama3.1` (no pip pkg)
+
+# PDF ticket support:
+pypdf>=4.0.0         # to READ a .pdf ticket (tickets/poisoned_ticket.pdf)
+reportlab>=4.0.0     # to REGENERATE the poisoned PDF (tools/make_poisoned_pdf.py)

@@ -23,6 +23,7 @@ s3_versioning                  = false         # no recovery from overwrite/dele
 kms_strict_key_policy          = false         # broad key policy
 kms_allow_cloudtrail           = false         # (trail is not using KMS yet)
 iam_deny_destructive           = false         # role can delete anything
+iam_scope_workload             = false         # broad workload grant (s3:*, kms:*, secretsmanager:*)
 cloudtrail_multi_region        = false         # only one region recorded
 cloudtrail_log_file_validation = false         # logs can be tampered undetected
 cloudtrail_data_events         = false         # object read/write not recorded

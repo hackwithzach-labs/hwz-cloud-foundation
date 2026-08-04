@@ -52,6 +52,9 @@ module "iam" {
 
   name_prefix      = local.name_prefix
   deny_destructive = var.iam_deny_destructive
+  scope_workload   = var.iam_scope_workload
+  account_id       = local.account_id
+  region           = local.region
 }
 
 module "s3" {
@@ -83,11 +86,14 @@ module "cloudtrail" {
   data_events        = var.cloudtrail_data_events
   use_kms            = var.cloudtrail_use_kms
   kms_key_arn        = module.kms.key_arn
+  enforce_tls        = var.s3_enforce_tls
+  versioning         = var.s3_versioning
 }
 
 module "observability" {
   source = "./modules/observability"
 
-  name_prefix    = local.name_prefix
-  retention_days = var.log_retention_days
+  name_prefix      = local.name_prefix
+  retention_days   = var.log_retention_days
+  deny_destructive = var.iam_deny_destructive
 }

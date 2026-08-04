@@ -156,6 +156,39 @@ def _allow_cloudtrail_on_key(kms, kms_key_arn, trail_arn):
     kms.put_key_policy(KeyId=key_id, PolicyName="default", Policy=json.dumps(doc))
 
 
+def _scoped_workload_policy(project, region, acct):
+    """The least-privilege grant that REPLACES the broad wildcard allow. Same
+    shape the hardened Terraform writes: explicit actions (nothing ends in :*),
+    every Resource pinned to THIS project's own bucket / secret / key / log
+    group by name. This is what closes the HIGH wildcard-allow finding for real
+    on a live account, not just in the selftest snapshot."""
+    pfx = f"{project}-lab"
+    return {"Version": "2012-10-17", "Statement": [
+        {"Sid": "DataBucketObjects", "Effect": "Allow",
+         "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+         "Resource": f"arn:aws:s3:::{pfx}-data-*/*"},
+        {"Sid": "DataBucketList", "Effect": "Allow",
+         "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+         "Resource": f"arn:aws:s3:::{pfx}-data-*"},
+        {"Sid": "AppSecretRead", "Effect": "Allow",
+         "Action": ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"],
+         "Resource": f"arn:aws:secretsmanager:{region}:{acct}:secret:{pfx}-app-secret-*"},
+        {"Sid": "FoundationKeyDataPlane", "Effect": "Allow",
+         "Action": ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"],
+         "Resource": f"arn:aws:kms:{region}:{acct}:key/*",
+         "Condition": {"StringEquals": {"kms:ViaService": [
+             f"s3.{region}.amazonaws.com", f"secretsmanager.{region}.amazonaws.com"]}}},
+        {"Sid": "AppLogWrite", "Effect": "Allow",
+         "Action": ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"],
+         "Resource": f"arn:aws:logs:{region}:{acct}:log-group:/{pfx}/*"},
+        {"Sid": "BedrockInvoke", "Effect": "Allow",
+         "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+         "Resource": f"arn:aws:bedrock:{region}::foundation-model/*"},
+        {"Sid": "ReadAccountTrail", "Effect": "Allow",
+         "Action": ["cloudtrail:LookupEvents"], "Resource": "*"},
+    ]}
+
+
 def apply_live(snapshot, project, region, kms_key_arn):
     import boto3
     s3 = boto3.client("s3", region_name=region)
@@ -216,6 +249,13 @@ def apply_live(snapshot, project, region, kms_key_arn):
             done.append(f"vpc {v['id']}: flow logs on")
 
     for role in snapshot.get("iam_roles", []):
+        if role.get("has_wildcard_allow") and role["name"].endswith("-workload"):
+            # Replace the broad grant with least privilege. PutRolePolicy on the
+            # SAME inline policy name overwrites it in place -- the wildcard is
+            # gone, not merely denied around.
+            iam.put_role_policy(RoleName=role["name"], PolicyName=f"{role['name']}-grant",
+                PolicyDocument=json.dumps(_scoped_workload_policy(project, region, acct)))
+            done.append(f"iam {role['name']}: wildcard allow replaced with least-privilege grant")
         if not role.get("has_destructive_deny"):
             # Explicit deny wins over any allow. Fence off the actions that let a
             # compromised identity destroy evidence or data.

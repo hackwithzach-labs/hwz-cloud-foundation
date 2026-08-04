@@ -1,20 +1,55 @@
 {
   "s3_buckets": [
-    {"name": "hwz-lab-data-abc123", "default_encryption": false, "block_public_access": false, "tls_only_policy": false, "versioning": false}
+    {
+      "name": "hwz-lab-data-abc123",
+      "default_encryption": false,
+      "block_public_access": false,
+      "tls_only_policy": false,
+      "versioning": false
+    }
   ],
   "security_groups": [
-    {"id": "sg-0endpoint", "ingress": [{"port": 443, "cidr": "0.0.0.0/0"}]}
+    {
+      "id": "sg-0endpoint",
+      "ingress": [
+        {
+          "port": 443,
+          "cidr": "0.0.0.0/0"
+        }
+      ]
+    }
   ],
   "vpcs": [
-    {"id": "vpc-0lab", "flow_logs": false}
+    {
+      "id": "vpc-0lab",
+      "flow_logs": false
+    }
   ],
   "iam_roles": [
-    {"name": "hwz-lab-workload", "has_wildcard_allow": true, "has_destructive_deny": false}
+    {
+      "name": "hwz-lab-workload",
+      "has_wildcard_allow": true,
+      "has_destructive_deny": false
+    },
+    {
+      "name": "hwz-lab-flowlogs",
+      "has_wildcard_allow": false,
+      "has_destructive_deny": false
+    }
   ],
   "kms_keys": [
-    {"id": "key-0lab", "rotation": false}
+    {
+      "id": "key-0lab",
+      "rotation": false
+    }
   ],
   "cloudtrails": [
-    {"name": "hwz-lab-trail", "multi_region": false, "log_file_validation": false, "data_events": false, "kms_encrypted": false}
+    {
+      "name": "hwz-lab-trail",
+      "multi_region": false,
+      "log_file_validation": false,
+      "data_events": false,
+      "kms_encrypted": false
+    }
   ]
 }

@@ -1,0 +1,11 @@
+{
+  "_comment": "WEAK detection profile. Foundation is hardened (CloudTrail delivering to S3), but the detection layer is off: no metric filters, no alarms, no EventBridge rules, no alert path, GuardDuty/Config/Security Hub disabled. What most accounts look like the day after go-live.",
+  "metric_filters": [],
+  "alarms": [],
+  "eventbridge_rules": [],
+  "alert_topic": {"exists": false},
+  "guardduty": {"enabled": false},
+  "config": {"recording": false, "rules": 0},
+  "security_hub": {"enabled": false},
+  "cloudtrail": {"delivering_to_s3": true}
+}
