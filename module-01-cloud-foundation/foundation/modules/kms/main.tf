@@ -37,7 +37,11 @@ locals {
       Sid       = "EnableRootAccount"
       Effect    = "Allow"
       Principal = { AWS = local.root_arn }
-      Action    = "kms:*"
+      # List, not a bare string: strict_statements must stay a homogeneous
+      # list(object) so the `var.strict_key_policy ? strict_statements : []`
+      # conditional can unify its two arms. WorkloadUse below uses a list Action
+      # too; mixing a string here makes the list a tuple and Terraform errors.
+      Action    = ["kms:*"]
       Resource  = "*"
     },
     {
