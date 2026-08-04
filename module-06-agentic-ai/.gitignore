@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+scan/posture.json
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
