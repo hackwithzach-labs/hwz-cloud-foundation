@@ -13,6 +13,14 @@ resource "aws_secretsmanager_secret" "this" {
   name        = "${var.name_prefix}-app-secret"
   description = "Placeholder application credentials for the pillar builds"
   kms_key_id  = var.kms_key_arn != "" ? var.kms_key_arn : null
+
+  # Lab convenience, mirrors force_destroy on the buckets. Secrets Manager
+  # normally SCHEDULES a delete with a 7-30 day recovery window and RESERVES the
+  # name for that whole window -- so a teardown-then-redeploy fails with "a
+  # secret with this name is already scheduled for deletion". Zero means purge
+  # on destroy so the deploy -> destroy -> redeploy loop this course runs stays
+  # clean. In production you WANT a recovery window; here you want a repeatable lab.
+  recovery_window_in_days = 0
 }
 
 # Best practice: never hardcode a secret value, not even a placeholder. We
