@@ -183,6 +183,12 @@ def collect_live(project, region):
             meta = kms.describe_key(KeyId=kid)["KeyMetadata"]
             if meta.get("KeyManager") != "CUSTOMER":
                 continue
+            # A key scheduled for deletion is on its way out, not a live control.
+            # After a teardown-and-redeploy the old key lingers in PendingDeletion
+            # for its recovery window, still tagged; flagging its rotation is
+            # noise about a key that no longer protects anything. Skip it.
+            if meta.get("KeyState") in ("PendingDeletion", "PendingReplicaDeletion"):
+                continue
             # Scope to this lab's own keys by tag, exactly like the S3, EC2, VPC
             # and CloudTrail collectors above. Without this the scanner reaches
             # OUT of your lab and flags every unrelated customer-managed key in
