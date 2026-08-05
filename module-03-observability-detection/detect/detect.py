@@ -278,7 +278,49 @@ def collect_live(project, region):
 # ---------------------------------------------------------------------------
 # REPORT + CLI
 # ---------------------------------------------------------------------------
-def report(findings):
+# ---------------------------------------------------------------------------
+# LAB CONSOLE MAP  (added) — ties this CLI run to its card in the HWZ Lab
+# Console, so terminal output and the dashboard are provably the same story.
+#   findings (rc=1) -> the red card;   clean (rc=0) -> the green card.
+# ---------------------------------------------------------------------------
+_CONSOLE_CARD = 'Observability & Detection'
+_CONSOLE_META = 'Chapter 10 · Pillar: Cloud'
+_CONSOLE_WEAK = 'BLIND'
+_CONSOLE_HARD = 'WIRED'
+_CONSOLE_UNIT = 'gap(s)'
+_CONSOLE_WLINE = 'the SOC is blind — it happens and no one is paged'
+_CONSOLE_HLINE = 'every surface alarms'
+
+
+def console_map(rc, n):
+    rule = "  " + "─" * 62
+    print()
+    print(rule)
+    print("  LAB CONSOLE MAP  —  what you just saw, on the chart")
+    print(rule)
+    print(f"  Card   : {_CONSOLE_CARD}   ({_CONSOLE_META})")
+    if rc == 0:
+        print(f'  State  : HARDENED  · green   Console verdict: "{_CONSOLE_HARD}"')
+        print(f"  Match  : {_CONSOLE_HLINE} — exactly what the green card shows.")
+    else:
+        print(f'  State  : WEAK      · red     Console verdict: "{_CONSOLE_WEAK}"')
+        print(f"  Match  : {n} {_CONSOLE_UNIT} — {_CONSOLE_WLINE},")
+        print("           which is what the red card shows.")
+    print(f'  Chart  : flip the "{_CONSOLE_CARD}" card in the Lab Console for the same result.')
+    print(rule)
+
+
+def report(*a, **k):
+    rc = _report(*a, **k)
+    try:
+        n = len(a[-1])
+    except Exception:
+        n = rc
+    console_map(rc, n)
+    return rc
+
+
+def _report(findings):
     if not findings:
         print("PASS. Detection is wired. If it happens, you will see it.")
         return 0

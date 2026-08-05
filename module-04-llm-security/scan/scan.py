@@ -72,7 +72,49 @@ def collect_live(project: str, region: str) -> dict:
     return {k: False for k in SNAPSHOT_KEY.values()}
 
 
-def report(gaps: list[dict]) -> int:
+# ---------------------------------------------------------------------------
+# LAB CONSOLE MAP  (added) — ties this CLI run to its card in the HWZ Lab
+# Console, so terminal output and the dashboard are provably the same story.
+#   findings (rc=1) -> the red card;   clean (rc=0) -> the green card.
+# ---------------------------------------------------------------------------
+_CONSOLE_CARD = 'Prompt Injection'
+_CONSOLE_META = 'Chapter 11 · Pillar 1: LLM'
+_CONSOLE_WEAK = 'LEAKED'
+_CONSOLE_HARD = 'BLOCKED'
+_CONSOLE_UNIT = 'guardrail/WAF gap(s)'
+_CONSOLE_WLINE = 'with these open, indirect injection leaks the secret'
+_CONSOLE_HLINE = 'guardrail + WAF wired, both directions'
+
+
+def console_map(rc, n):
+    rule = "  " + "─" * 62
+    print()
+    print(rule)
+    print("  LAB CONSOLE MAP  —  what you just saw, on the chart")
+    print(rule)
+    print(f"  Card   : {_CONSOLE_CARD}   ({_CONSOLE_META})")
+    if rc == 0:
+        print(f'  State  : HARDENED  · green   Console verdict: "{_CONSOLE_HARD}"')
+        print(f"  Match  : {_CONSOLE_HLINE} — exactly what the green card shows.")
+    else:
+        print(f'  State  : WEAK      · red     Console verdict: "{_CONSOLE_WEAK}"')
+        print(f"  Match  : {n} {_CONSOLE_UNIT} — {_CONSOLE_WLINE},")
+        print("           which is what the red card shows.")
+    print(f'  Chart  : flip the "{_CONSOLE_CARD}" card in the Lab Console for the same result.')
+    print(rule)
+
+
+def report(*a, **k):
+    rc = _report(*a, **k)
+    try:
+        n = len(a[-1])
+    except Exception:
+        n = rc
+    console_map(rc, n)
+    return rc
+
+
+def _report(gaps: list[dict]) -> int:
     if not gaps:
         print("PASS. Guardrail and WAF are wired. "
               "Injection is filtered, floods die at the edge.")

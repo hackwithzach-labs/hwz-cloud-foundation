@@ -59,7 +59,49 @@ def scan_file(path: str) -> list[dict]:
         return scan_source(f.read())
 
 
-def report(path: str, gaps: list[dict]) -> int:
+# ---------------------------------------------------------------------------
+# LAB CONSOLE MAP  (added) — ties this CLI run to its card in the HWZ Lab
+# Console, so terminal output and the dashboard are provably the same story.
+#   findings (rc=1) -> the red card;   clean (rc=0) -> the green card.
+# ---------------------------------------------------------------------------
+_CONSOLE_CARD = 'Prompt Injection (the video lab)'
+_CONSOLE_META = 'Chapter 11 · Pillar 1: LLM'
+_CONSOLE_WEAK = 'LEAKED'
+_CONSOLE_HARD = 'BLOCKED'
+_CONSOLE_UNIT = 'missing IPI layer(s)'
+_CONSOLE_WLINE = 'a layer is missing — the poisoned ticket gets through'
+_CONSOLE_HLINE = 'all four indirect-injection layers present'
+
+
+def console_map(rc, n):
+    rule = "  " + "─" * 62
+    print()
+    print(rule)
+    print("  LAB CONSOLE MAP  —  what you just saw, on the chart")
+    print(rule)
+    print(f"  Card   : {_CONSOLE_CARD}   ({_CONSOLE_META})")
+    if rc == 0:
+        print(f'  State  : HARDENED  · green   Console verdict: "{_CONSOLE_HARD}"')
+        print(f"  Match  : {_CONSOLE_HLINE} — exactly what the green card shows.")
+    else:
+        print(f'  State  : WEAK      · red     Console verdict: "{_CONSOLE_WEAK}"')
+        print(f"  Match  : {n} {_CONSOLE_UNIT} — {_CONSOLE_WLINE},")
+        print("           which is what the red card shows.")
+    print(f'  Chart  : flip the "{_CONSOLE_CARD}" card in the Lab Console for the same result.')
+    print(rule)
+
+
+def report(*a, **k):
+    rc = _report(*a, **k)
+    try:
+        n = len(a[-1])
+    except Exception:
+        n = rc
+    console_map(rc, n)
+    return rc
+
+
+def _report(path: str, gaps: list[dict]) -> int:
     name = os.path.basename(path)
     if not gaps:
         print(f"PASS ({name}). All four indirect-injection layers present.")
