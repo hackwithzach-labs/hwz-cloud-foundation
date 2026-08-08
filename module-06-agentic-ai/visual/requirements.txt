@@ -1,0 +1,5 @@
+# Chapter 13 visual lab
+flask>=3.0.0         # python app.py -> http://localhost:5113
+# No boto3: this scanner reads the posture file Terraform writes on apply.
+# Nothing here writes to anything. The visual lab renders what the scanner sees;
+# deploys and teardowns stay in Terraform, where they are reviewable.

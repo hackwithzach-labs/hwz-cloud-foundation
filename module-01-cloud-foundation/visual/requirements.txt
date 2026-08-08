@@ -1,0 +1,5 @@
+# Chapter 8 visual lab
+flask>=3.0.0         # python app.py -> http://localhost:5108
+boto3>=1.34.0        # only used to READ your account, via ../scan/scan.py
+# Nothing here writes to anything. The visual lab renders what the scanner sees;
+# deploys and teardowns stay in Terraform, where they are reviewable.
