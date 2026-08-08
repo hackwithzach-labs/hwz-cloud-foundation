@@ -1,0 +1,7 @@
+# Chapter 10 visual lab (visual/app.py)
+flask>=3.0.0         # python app.py -> http://localhost:5110
+boto3>=1.34.0        # only used to READ your account, via ../detect/detect.py
+
+# Nothing here writes to AWS. The visual lab has no mutating call in it at all:
+# it renders what the scanner sees. Deploys and teardowns stay in Terraform,
+# where they are reviewable.
