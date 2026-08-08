@@ -54,13 +54,41 @@ resource "aws_sns_topic_subscription" "email" {
 }
 
 # --------------------------------------------------------------------------
-# APP LAYER: metric filters on the app log group, each with an alarm.
-# The API (Module 2) writes one JSON line per request with a "status" field.
+# APP LAYER: metric filters, one set PER LOG GROUP THAT ACTUALLY RECEIVES LOGS.
+#
+# This used to attach to a single log group and that was the bug the lab could
+# not teach around. A metric filter is scoped to exactly one log group. It does
+# not follow your application; it does not search the account. Attach it to
+# /hwz-lab/app and your Lambda -- which delivers to /aws/lambda/<fn>, because
+# that is the only place the Lambda service will ever put it -- is invisible.
+#
+# So the producers layer publishes the list of groups it genuinely writes into,
+# and we attach the same two filters to every one of them. Every filter emits
+# the SAME metric name into the SAME namespace, so CloudWatch aggregates them
+# and ONE alarm covers all three producers. Distributed collection, central
+# metric, single page. That is the shape real detection engineering takes.
+#
+# Both filters match a JSON NUMBER: `$.status = 401`, not `"401"`. A producer
+# that emits status as a string matches nothing, the metric stays flat, and the
+# alarm never fires. hwz-detect and emit.py --selftest both check for this.
 # --------------------------------------------------------------------------
+locals {
+  # Deduplicate: the app group can legitimately appear more than once as
+  # producers are toggled, and a duplicate filter name is an apply error.
+  watched = local.on == 1 ? toset(distinct(concat(
+    [var.app_log_group_name], var.watched_log_groups
+  ))) : toset([])
+
+  # A filter name must be unique per log group, so derive a stable suffix from
+  # the group name rather than an index -- an index would rename every filter
+  # when a producer is toggled, and Terraform would destroy and recreate them.
+  suffix = { for g in local.watched : g => replace(trim(g, "/"), "/", "-") }
+}
+
 resource "aws_cloudwatch_log_metric_filter" "unauthorized_access" {
-  count          = local.on
-  name           = "${var.name_prefix}-unauthorized-access"
-  log_group_name = var.app_log_group_name
+  for_each       = local.watched
+  name           = "${var.name_prefix}-unauthorized-access-${local.suffix[each.value]}"
+  log_group_name = each.value
   pattern        = "{ ($.status = 401) || ($.status = 403) }"
 
   metric_transformation {
@@ -72,9 +100,9 @@ resource "aws_cloudwatch_log_metric_filter" "unauthorized_access" {
 }
 
 resource "aws_cloudwatch_log_metric_filter" "cost_cap_breach" {
-  count          = local.on
-  name           = "${var.name_prefix}-cost-cap-breach"
-  log_group_name = var.app_log_group_name
+  for_each       = local.watched
+  name           = "${var.name_prefix}-cost-cap-breach-${local.suffix[each.value]}"
+  log_group_name = each.value
   pattern        = "{ $.status = 429 }"
 
   metric_transformation {

@@ -1,0 +1,116 @@
+#!/bin/bash
+###############################################################################
+# EC2 log producer :: user_data
+#
+# Two halves, and the lab lets you see them fail separately.
+#
+# HALF 1 (always runs, even in the weak profile): the "application" writes a
+# structured audit line to a file on local disk every few seconds. This is what
+# every application on every EC2 instance in the world does. It feels like
+# logging. It is not logging -- it is writing to a disk that gets deleted.
+#
+# HALF 2 (hardened profile only): the CloudWatch agent is installed, given a
+# config that maps that file to a log group, and started. THIS is the step that
+# turns a file into a log event. Nothing about EC2 does it for you.
+###############################################################################
+set -euxo pipefail
+
+APP_LOG=/var/log/hwz-app.log
+touch "$APP_LOG"
+
+# --------------------------------------------------------------------------
+# HALF 1: the application. Emits the same JSON contract as the Lambda and the
+# container producers, so the same two metric filters count all three.
+# --------------------------------------------------------------------------
+cat >/usr/local/bin/hwz-emit.py <<'PY'
+import json, time, uuid, sys
+
+ROUTE = "/v1/complete"
+OUT = "/var/log/hwz-app.log"
+
+
+def line(status, detail, principal):
+    return {"audit": True, "producer": "ec2", "request_id": str(uuid.uuid4()),
+            "route": ROUTE, "principal": principal, "status": status,
+            "detail": detail}
+
+
+def batch():
+    ev = [line(200, "ok", "user_carol") for _ in range(8)]
+    ev += [line(403 if i % 3 == 2 else 401, "Invalid token", "attacker_mallory")
+           for i in range(6)]
+    ev += [line(429, "Rate cap exceeded", "attacker_mallory") for _ in range(2)]
+    return ev
+
+
+while True:
+    with open(OUT, "a") as fh:
+        for e in batch():
+            fh.write(json.dumps(e) + "\n")
+        fh.flush()
+    # Once a minute: the alarm period is 60s, so each cycle is one clean,
+    # self-contained evaluation window.
+    time.sleep(60)
+PY
+
+cat >/etc/systemd/system/hwz-emit.service <<'UNIT'
+[Unit]
+Description=HWZ lab application, writing structured audit lines to local disk
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/hwz-emit.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now hwz-emit.service
+
+%{ if ship_logs ~}
+# --------------------------------------------------------------------------
+# HALF 2: the CloudWatch agent. Install, configure, start.
+#
+# Three things must all be true or nothing ships, and the box gives you no
+# error for any of them:
+#   1. the agent is installed and running
+#   2. the agent config names this file and a destination log group
+#   3. the instance role allows logs:CreateLogStream and logs:PutLogEvents
+# The Terraform attaches (3) only in this profile. hwz-detect checks all three.
+# --------------------------------------------------------------------------
+dnf install -y amazon-cloudwatch-agent
+
+cat >/opt/aws/amazon-cloudwatch-agent/etc/hwz.json <<'CFG'
+{
+  "agent": { "run_as_user": "root" },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/hwz-app.log",
+            "log_group_name": "${log_group}",
+            "log_stream_name": "{instance_id}",
+            "timestamp_format": "%Y-%m-%dT%H:%M:%S"
+          }
+        ]
+      }
+    }
+  }
+}
+CFG
+
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/hwz.json
+
+# Leave a breadcrumb hwz-detect and the runbook can both read.
+echo "shipping=true group=${log_group} project=${project}" >/var/log/hwz-shipping.status
+%{ else ~}
+# WEAK PROFILE: no agent, no role, no config. The application above is running
+# perfectly and writing perfectly good evidence to a disk that will be deleted
+# with the instance. Log in and `tail /var/log/hwz-app.log` -- it is all there.
+# Then look in CloudWatch and find nothing. That gap is the lesson.
+echo "shipping=false reason=no-agent-installed" >/var/log/hwz-shipping.status
+%{ endif ~}

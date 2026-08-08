@@ -19,8 +19,14 @@ variable "region" {
 }
 
 variable "app_log_group_name" {
-  description = "The foundation app log group the API writes structured audit lines to. Metric filters attach here."
+  description = "The foundation app log group. Always watched, because the EC2 CloudWatch agent ships into it."
   type        = string
+}
+
+variable "watched_log_groups" {
+  description = "Every OTHER log group a deployed producer actually delivers into -- the Lambda service group, the container awslogs group. The producers module computes this list; the detection module attaches the app-layer metric filters to each entry. A group missing from this list is a producer nobody is counting, which is the exact failure this module teaches: the filters look perfect and the detection is blind."
+  type        = list(string)
+  default     = []
 }
 
 variable "cloudtrail_bucket_arn" {

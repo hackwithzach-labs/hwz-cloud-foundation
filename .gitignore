@@ -3,6 +3,12 @@
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+# ...EXCEPT the two lab profiles. baseline.tfvars and hardened.tfvars are not
+# secrets, they ARE the lesson: the weak/hardened switch every module turns on.
+# Ignoring them shipped four modules to students with no way to run either
+# profile. terraform.tfvars (which can hold real values) stays ignored.
+!baseline.tfvars
+!hardened.tfvars
 .terraform/
 .terraform.lock.hcl
 # Plan files: a plan file is a zip with an embedded state snapshot.
