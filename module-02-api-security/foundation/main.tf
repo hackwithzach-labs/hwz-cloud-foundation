@@ -3,14 +3,21 @@
 #
 # This is the "compose the foundation you already own" idea in code. It does
 # NOT redefine a VPC, a key, or an identity. It calls the module-1 foundation,
-# pinned to its HARDENED values, and adds only the two things Pillar 2 needs on
-# top: a Bedrock interface endpoint in the private subnets, and a workload role
-# the API assumes.
+# pinned to its HARDENED values, and adds only the layer Pillar 2 needs on top:
+# a Bedrock interface endpoint in the private subnets, and a workload role the
+# API assumes.
 #
 # The foundation is pinned hardened because you already proved those controls
 # in Chapter 8. Re-weakening proven ground teaches nothing. Only the NEW layer
 # (the API app itself) has a weak baseline, and that baseline lives in the app,
 # not here: app/config.py, HWZ_PROFILE=baseline vs hardened.
+#
+# WHAT CHANGED: the three API resources moved out of this file into
+# ./modules/api. Behaviour is identical -- same endpoint, same role, same
+# policy -- but the layer is now a CHILD module, which means Chapters 11, 12,
+# 13 and the capstone can compose it directly instead of calling this root.
+# Roots calling roots inherit provider configuration in ways that break
+# destroy, and the capstone would have been four levels deep.
 #
 # Cost note: the ONE billable hourly resource here is the interface endpoint.
 # There are no NAT gateways by design. Apply at the start of a session, destroy
@@ -27,9 +34,6 @@ terraform {
 provider "aws" {
   region = var.region
 }
-
-data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
 
 locals {
   name_prefix = "${var.project}-${var.environment}"
@@ -65,58 +69,17 @@ module "foundation" {
 }
 
 # --------------------------------------------------------------------------
-# NEW layer: Bedrock runtime endpoint in the foundation's PRIVATE subnets.
-# The model is reachable from inside the VPC only. No public path.
+# NEW layer: the Chapter 9 API infrastructure, now a reusable child module.
 # --------------------------------------------------------------------------
-resource "aws_vpc_endpoint" "bedrock_runtime" {
-  vpc_id              = module.foundation.vpc_id
-  service_name        = "com.amazonaws.${var.region}.bedrock-runtime"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = module.foundation.private_subnet_ids
-  security_group_ids  = [module.foundation.endpoint_security_group_id]
-  private_dns_enabled = true
+module "api" {
+  source = "./modules/api"
 
-  tags = {
-    Project = var.project
-    Name    = "${local.name_prefix}-bedrock-runtime"
-  }
-}
-
-# --------------------------------------------------------------------------
-# NEW layer: the API's workload role. Least privilege from the start: it may
-# invoke ONE model family and read its ONE secret. Nothing else.
-# --------------------------------------------------------------------------
-data "aws_iam_policy_document" "api_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "api" {
-  name               = "${local.name_prefix}-api-role"
-  assume_role_policy = data.aws_iam_policy_document.api_assume.json
-  tags               = { Project = var.project }
-}
-
-data "aws_iam_policy_document" "api_perms" {
-  statement {
-    sid       = "InvokeOneModelFamily"
-    actions   = ["bedrock:InvokeModel"]
-    resources = ["arn:aws:bedrock:${var.region}::foundation-model/${var.allowed_model}"]
-  }
-  statement {
-    sid       = "ReadOwnSecret"
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [module.foundation.secret_arn]
-  }
-}
-
-resource "aws_iam_role_policy" "api" {
-  name   = "${local.name_prefix}-api-perms"
-  role   = aws_iam_role.api.id
-  policy = data.aws_iam_policy_document.api_perms.json
+  name_prefix                = local.name_prefix
+  project                    = var.project
+  region                     = var.region
+  vpc_id                     = module.foundation.vpc_id
+  private_subnet_ids         = module.foundation.private_subnet_ids
+  endpoint_security_group_id = module.foundation.endpoint_security_group_id
+  secret_arn                 = module.foundation.secret_arn
+  allowed_model              = var.allowed_model
 }

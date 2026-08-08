@@ -10,6 +10,10 @@
 !baseline.tfvars
 !hardened.tfvars
 .terraform/
+# archive_file writes the Lambda deployment zip here at plan time. It is a
+# build artifact derived from lambda_src/ -- committing it means the repo can
+# disagree with the source it was built from.
+.build/
 .terraform.lock.hcl
 # Plan files: a plan file is a zip with an embedded state snapshot.
 # The pair *.tfplan AND tfplan* matters: the file actually created is often
