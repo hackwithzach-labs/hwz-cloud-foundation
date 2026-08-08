@@ -56,10 +56,21 @@ app = Flask(__name__)
 # so the wall reads as one path from "it happened" to "a human knows" rather
 # than as eight unrelated AWS services.
 # --------------------------------------------------------------------------
+# A surface may carry `requires`: the name of an upstream snapshot key that must
+# be non-empty for this surface's checks to mean anything. This exists because
+# of a bug this very screen had on its first build.
+#
+# check_alarms() iterates over the metric filters. With zero filters the loop
+# body never executes and it returns zero findings -- and the card rendered
+# green, PRESENT, in a completely blind account. No findings is not the same
+# fact as no problems. A surface whose checks could not run is UNTESTED, and
+# untested is amber, not green. Rendering it green would have taught students
+# the exact mistake this chapter exists to prevent.
 SURFACES = [
     {"key": "cw-filter", "name": "Metric Filters",
      "chain": "log line -> number", "why": "Turns text in the log group into a metric CloudWatch can alarm on. No filter, no arithmetic, and the evidence just accumulates."},
-    {"key": "cw-alarm", "name": "Alarms",
+    {"key": "cw-alarm", "name": "Alarms", "requires": "metric_filters",
+     "requires_label": "no metric filters exist, so there is nothing for an alarm to be checked against",
      "chain": "number -> threshold", "why": "Decides when a count becomes an incident. An alarm with nothing upstream is untested, not healthy."},
     {"key": "eventbridge", "name": "EventBridge Rules",
      "chain": "API call -> event", "why": "Watches the control plane. This is what notices someone turning your audit trail off."},
@@ -147,14 +158,26 @@ def judge(snap):
     cards = []
     for s in SURFACES:
         gaps = by_surface.get(s["key"], [])
-        cards.append({**s, "gaps": gaps, "ok": len(gaps) == 0,
-                      "worst": ("HIGH" if any(g["sev"] == "HIGH" for g in gaps)
-                                else "MEDIUM" if gaps else "")})
+        req = s.get("requires")
+        # Three states, not two. A surface with findings is MISSING. A surface
+        # with no findings whose upstream is empty is UNTESTED -- its checks
+        # could not run. Only a surface with no findings AND a live upstream
+        # has actually been proven PRESENT.
+        if gaps:
+            state = "MISSING"
+        elif req and not snap.get(req):
+            state = "UNTESTED"
+        else:
+            state = "PRESENT"
+        cards.append({**s, "gaps": gaps, "state": state,
+                      "note": s.get("requires_label", "") if state == "UNTESTED" else ""})
+
     highs = sum(1 for f in findings if f[0] == "HIGH")
     return {
         "cards": cards,
         "total": len(findings),
         "highs": highs,
+        "untested": sum(1 for c in cards if c["state"] == "UNTESTED"),
         "verdict": "WIRED" if not findings else "BLIND",
     }
 
@@ -212,13 +235,16 @@ PAGE = r"""<!doctype html>
   .fixture{background:rgba(232,163,61,.15);color:var(--amber);border:1px solid var(--amber)}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;border-left:4px solid var(--line)}
-  .card.bad{border-left-color:var(--red)}
-  .card.good{border-left-color:var(--green)}
+  .card.MISSING{border-left-color:var(--red)}
+  .card.PRESENT{border-left-color:var(--green)}
+  .card.UNTESTED{border-left-color:var(--amber)}
   .card h3{font-family:'Chakra Petch',sans-serif;margin:0 0 3px;font-size:15px}
   .chain{color:var(--dim);font-size:11px;letter-spacing:.5px;margin-bottom:9px;font-family:ui-monospace,monospace}
   .why{color:#c8ccd4;font-size:12px;line-height:1.55;margin-bottom:10px}
   .state{font-weight:700;font-size:12px;letter-spacing:1px}
-  .state.bad{color:var(--red)} .state.good{color:var(--green)}
+  .state.MISSING{color:var(--red)} .state.PRESENT{color:var(--green)}
+  .state.UNTESTED{color:var(--amber)}
+  .untested{font-size:11.5px;color:var(--amber);border-top:1px solid var(--line);padding-top:8px;margin-top:8px;line-height:1.5}
   .gap{font-size:11.5px;color:#d8dbe0;border-top:1px solid var(--line);padding-top:8px;margin-top:8px;line-height:1.5}
   .sev{font-weight:700;font-size:10px;padding:1px 6px;border-radius:3px;margin-right:6px}
   .HIGH{background:var(--red)} .MEDIUM{background:var(--amber);color:#000}
@@ -248,7 +274,8 @@ PAGE = r"""<!doctype html>
 </main>
 <footer>
   Eight surfaces, one chain: <b>event &rarr; CloudTrail &rarr; Logs &rarr; filter &rarr; alarm &rarr; confirmed subscriber &rarr; a human</b>.
-  A break anywhere means it happened and nobody was paged.<br>
+  A break anywhere means it happened and nobody was paged.
+  <b>Amber = UNTESTED</b>: that surface's checks could not run because nothing upstream exists. No findings is not the same fact as no problems.<br>
   Terminal equivalent: <code>python detect\detect.py --project hwz --region us-east-1</code>
 </footer>
 <script>
@@ -263,15 +290,18 @@ async function scan(force){
     '<div class="verdict ' + (d.verdict==='WIRED'?'wired':'blind') + '">' + d.verdict +
     '</div><div class="note">' + (d.verdict==='WIRED'
       ? 'Every surface alarms. If it happens, you will see it.'
-      : d.total + ' gap(s), ' + d.highs + ' HIGH. The SOC is blind — it happens and no one is paged.') + '</div>';
+      : d.total + ' gap(s), ' + d.highs + ' HIGH' +
+        (d.untested ? ', and ' + d.untested + ' surface(s) could not be evaluated at all' : '') +
+        '. The SOC is blind — it happens and no one is paged.') + '</div>';
   document.getElementById('note').textContent = d.note;
   document.getElementById('grid').innerHTML = d.cards.map(c => `
-    <div class="card ${c.ok?'good':'bad'}">
+    <div class="card ${c.state}">
       <h3>${c.name}</h3>
       <div class="chain">${c.chain}</div>
       <div class="why">${c.why}</div>
-      <div class="state ${c.ok?'good':'bad'}">${c.ok?'PRESENT':'MISSING'}</div>
+      <div class="state ${c.state}">${c.state}</div>
       ${c.gaps.map(g => `<div class="gap"><span class="sev ${g.sev}">${g.sev}</span>${g.msg}</div>`).join('')}
+      ${c.note ? `<div class="untested">Not evaluated — ${c.note}. No findings here is not the same fact as no problems.</div>` : ''}
     </div>`).join('');
 }
 scan();
