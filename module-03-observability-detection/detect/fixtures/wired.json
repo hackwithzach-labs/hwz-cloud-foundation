@@ -1,21 +1,116 @@
 {
-  "_comment": "HARDENED detection profile. Two app-layer metric filters (each with an alarm publishing to the alert topic), three control-plane EventBridge rules (ENABLED, each targeting SNS), a confirmed alert subscription, and GuardDuty/Config/Security Hub on. detect.py should return zero gaps against this.",
+  "_comment": "HARDENED profile: every producer delivers AND every group a producer delivers into carries both app-layer metric filters. Six filters, three groups, two shared metric names, two alarms -- distributed collection, central metric, single page. detect.py must return zero gaps against this.",
   "metric_filters": [
-    {"name": "unauthorized-access", "metric_name": "UnauthorizedAccess"},
-    {"name": "cost-cap-breach", "metric_name": "CostCapBreach"}
+    {
+      "name": "hwz-lab-unauthorized-access-hwz-lab-app",
+      "metric_name": "UnauthorizedAccess",
+      "log_group": "/hwz-lab/app"
+    },
+    {
+      "name": "hwz-lab-cost-cap-breach-hwz-lab-app",
+      "metric_name": "CostCapBreach",
+      "log_group": "/hwz-lab/app"
+    },
+    {
+      "name": "hwz-lab-unauthorized-access-aws-lambda-hwz-lab-emitter",
+      "metric_name": "UnauthorizedAccess",
+      "log_group": "/aws/lambda/hwz-lab-emitter"
+    },
+    {
+      "name": "hwz-lab-cost-cap-breach-aws-lambda-hwz-lab-emitter",
+      "metric_name": "CostCapBreach",
+      "log_group": "/aws/lambda/hwz-lab-emitter"
+    },
+    {
+      "name": "hwz-lab-unauthorized-access-hwz-lab-ecs",
+      "metric_name": "UnauthorizedAccess",
+      "log_group": "/hwz-lab/ecs"
+    },
+    {
+      "name": "hwz-lab-cost-cap-breach-hwz-lab-ecs",
+      "metric_name": "CostCapBreach",
+      "log_group": "/hwz-lab/ecs"
+    }
   ],
   "alarms": [
-    {"metric": "UnauthorizedAccess", "alarm_actions": ["arn:aws:sns:us-east-1:000000000000:hwz-lab-alerts"]},
-    {"metric": "CostCapBreach", "alarm_actions": ["arn:aws:sns:us-east-1:000000000000:hwz-lab-alerts"]}
+    {
+      "metric": "UnauthorizedAccess",
+      "alarm_actions": [
+        "arn:aws:sns:us-east-1:000000000000:hwz-lab-alerts"
+      ]
+    },
+    {
+      "metric": "CostCapBreach",
+      "alarm_actions": [
+        "arn:aws:sns:us-east-1:000000000000:hwz-lab-alerts"
+      ]
+    }
   ],
   "eventbridge_rules": [
-    {"name": "cloudtrail-tamper", "state": "ENABLED", "targets_sns": true},
-    {"name": "sg-open-to-world", "state": "ENABLED", "targets_sns": true},
-    {"name": "root-account-use", "state": "ENABLED", "targets_sns": true}
+    {
+      "name": "cloudtrail-tamper",
+      "state": "ENABLED",
+      "targets_sns": true
+    },
+    {
+      "name": "sg-open-to-world",
+      "state": "ENABLED",
+      "targets_sns": true
+    },
+    {
+      "name": "root-account-use",
+      "state": "ENABLED",
+      "targets_sns": true
+    }
   ],
-  "alert_topic": {"exists": true, "name": "hwz-lab-alerts", "confirmed_subscriptions": 1},
-  "guardduty": {"enabled": true},
-  "config": {"recording": true, "rules": 3},
-  "security_hub": {"enabled": true},
-  "cloudtrail": {"delivering_to_s3": true}
+  "alert_topic": {
+    "exists": true,
+    "name": "hwz-lab-alerts",
+    "confirmed_subscriptions": 1
+  },
+  "guardduty": {
+    "enabled": true
+  },
+  "config": {
+    "recording": true,
+    "rules": 3
+  },
+  "security_hub": {
+    "enabled": true
+  },
+  "cloudtrail": {
+    "delivering_to_s3": true
+  },
+  "app_log_group": "/hwz-lab/app",
+  "producers": {
+    "lambda": [
+      {
+        "name": "hwz-lab-emitter",
+        "log_group": "/aws/lambda/hwz-lab-emitter",
+        "group_declared": true,
+        "retention_days": 7,
+        "kms": true
+      }
+    ],
+    "containers": [
+      {
+        "family": "hwz-lab-producer",
+        "container": "emitter",
+        "log_driver": "awslogs",
+        "log_group": "/hwz-lab/ecs"
+      }
+    ],
+    "ec2": [
+      {
+        "id": "i-0wired0000000000",
+        "can_put_logs": true,
+        "streams_seen": true
+      }
+    ]
+  },
+  "delivering_log_groups": [
+    "/hwz-lab/app",
+    "/aws/lambda/hwz-lab-emitter",
+    "/hwz-lab/ecs"
+  ]
 }

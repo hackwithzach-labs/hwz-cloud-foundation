@@ -1,11 +1,52 @@
 {
-  "_comment": "WEAK detection profile. Foundation is hardened (CloudTrail delivering to S3), but the detection layer is off: no metric filters, no alarms, no EventBridge rules, no alert path, GuardDuty/Config/Security Hub disabled. What most accounts look like the day after go-live.",
+  "_comment": "WEAK detection profile AND weak log delivery. The foundation is hardened (CloudTrail delivering to S3) but nothing is watching and, just as important, almost nothing is even shipping: the Lambda group was never declared so AWS made one with no retention and no key, the container task has no log driver at all, and the EC2 role cannot call logs:PutLogEvents. Note the Lambda group still appears under delivering_log_groups -- Lambda delivers whether you asked it to or not, which is exactly why a filter on the app group misses it.",
   "metric_filters": [],
   "alarms": [],
   "eventbridge_rules": [],
-  "alert_topic": {"exists": false},
-  "guardduty": {"enabled": false},
-  "config": {"recording": false, "rules": 0},
-  "security_hub": {"enabled": false},
-  "cloudtrail": {"delivering_to_s3": true}
+  "alert_topic": {
+    "exists": false
+  },
+  "guardduty": {
+    "enabled": false
+  },
+  "config": {
+    "recording": false,
+    "rules": 0
+  },
+  "security_hub": {
+    "enabled": false
+  },
+  "cloudtrail": {
+    "delivering_to_s3": true
+  },
+  "app_log_group": "/hwz-lab/app",
+  "producers": {
+    "lambda": [
+      {
+        "name": "hwz-lab-emitter",
+        "log_group": "/aws/lambda/hwz-lab-emitter",
+        "group_declared": false,
+        "retention_days": null,
+        "kms": false
+      }
+    ],
+    "containers": [
+      {
+        "family": "hwz-lab-producer",
+        "container": "emitter",
+        "log_driver": null,
+        "log_group": null
+      }
+    ],
+    "ec2": [
+      {
+        "id": "i-0blind0000000000",
+        "can_put_logs": false,
+        "streams_seen": false
+      }
+    ]
+  },
+  "delivering_log_groups": [
+    "/aws/lambda/hwz-lab-emitter"
+  ]
 }

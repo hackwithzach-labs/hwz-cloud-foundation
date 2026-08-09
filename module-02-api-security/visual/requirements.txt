@@ -1,0 +1,7 @@
+# Chapter 9 visual lab
+flask>=3.0.0         # python app.py -> http://localhost:5109
+httpx>=0.27.0        # fires the four attacks at your running API
+pyjwt>=2.8.0         # minting the test tokens (imported via ../attack/attack.py)
+
+# No boto3. This chapter's weak/hardened switch is HWZ_PROFILE in the app
+# process, not anything in AWS, so this lab needs no credentials at all.
