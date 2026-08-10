@@ -84,12 +84,6 @@ SURFACES = [
      "chain": "findings -> one queue", "why": "Aggregation. The difference between having signals and having a SOC."},
     {"key": "athena", "name": "CloudTrail Queryable",
      "chain": "past -> answerable", "why": "The trail delivering to S3 is what lets you hunt history after the fact."},
-    # The two surfaces that judge the FIRST half of the chain. Everything above
-    # asks what happens after a log event exists; these ask whether one exists.
-    {"key": "log-delivery", "name": "Log Delivery",
-     "chain": "compute -> a log group", "why": "Who actually writes the log. Lambda delivers by default but chooses retention and encryption for you; EC2 needs an agent, a config and an IAM role; a container needs a log driver in its task definition. Miss any of it and the evidence dies where it was written."},
-    {"key": "filter-coverage", "name": "Filter Coverage",
-     "chain": "every group -> watched", "why": "A metric filter is scoped to exactly one log group. It does not follow your application. A group that receives events with no filter on it is a producer nobody is counting, however good your other filters are."},
 ]
 
 

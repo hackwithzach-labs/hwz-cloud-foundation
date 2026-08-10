@@ -25,15 +25,15 @@ locals {
 module "vpc" {
   source = "./modules/vpc"
 
-  name_prefix          = local.name_prefix
-  vpc_cidr             = var.vpc_cidr
-  azs                  = var.azs
-  public_subnet_cidrs  = var.public_subnet_cidrs
-  private_subnet_cidrs = var.private_subnet_cidrs
+  name_prefix           = local.name_prefix
+  vpc_cidr              = var.vpc_cidr
+  azs                   = var.azs
+  public_subnet_cidrs   = var.public_subnet_cidrs
+  private_subnet_cidrs  = var.private_subnet_cidrs
   endpoint_ingress_cidr = var.ssh_ingress_cidr
-  enable_flow_logs     = var.vpc_flow_logs
-  flow_logs_group_arn  = module.observability.flow_log_group_arn
-  flow_logs_role_arn   = module.observability.flow_log_role_arn
+  enable_flow_logs      = var.vpc_flow_logs
+  flow_logs_group_arn   = module.observability.flow_log_group_arn
+  flow_logs_role_arn    = module.observability.flow_log_role_arn
 }
 
 module "kms" {
@@ -52,9 +52,6 @@ module "iam" {
 
   name_prefix      = local.name_prefix
   deny_destructive = var.iam_deny_destructive
-  scope_workload   = var.iam_scope_workload
-  account_id       = local.account_id
-  region           = local.region
 }
 
 module "s3" {
@@ -78,22 +75,19 @@ module "secrets" {
 module "cloudtrail" {
   source = "./modules/cloudtrail"
 
-  name_prefix        = local.name_prefix
-  account_id         = local.account_id
-  region             = local.region
-  multi_region       = var.cloudtrail_multi_region
+  name_prefix         = local.name_prefix
+  account_id          = local.account_id
+  region              = local.region
+  multi_region        = var.cloudtrail_multi_region
   log_file_validation = var.cloudtrail_log_file_validation
-  data_events        = var.cloudtrail_data_events
-  use_kms            = var.cloudtrail_use_kms
-  kms_key_arn        = module.kms.key_arn
-  enforce_tls        = var.s3_enforce_tls
-  versioning         = var.s3_versioning
+  data_events         = var.cloudtrail_data_events
+  use_kms             = var.cloudtrail_use_kms
+  kms_key_arn         = module.kms.key_arn
 }
 
 module "observability" {
   source = "./modules/observability"
 
-  name_prefix      = local.name_prefix
-  retention_days   = var.log_retention_days
-  deny_destructive = var.iam_deny_destructive
+  name_prefix    = local.name_prefix
+  retention_days = var.log_retention_days
 }

@@ -1,4 +1,6 @@
-# Prompt Injection Lab — Build it, Release it, Break it, Harden it
+# Chapter 11 visual lab — Prompt Injection
+
+*Build it. Release it. Break it. Harden it.*
 
 A tiny, real AI support agent you can **break with one message** and then
 **harden with architecture** until the exact same attack does nothing. This is
@@ -18,7 +20,10 @@ Cybersecurity Education That Gets You Hired, Promoted and Paid.
 ```
 agent_vulnerable.py   the ~40-line support agent, before hardening
 agent_hardened.py     the same agent, with four layers of defense in depth
-model.py              one model layer, three backends (sim / anthropic / bedrock)
+ipi_scan.py           the scanner: proves which of the four layers are missing
+app.py                the browser console — the same lab, visually, on :5111
+engine.py             shared run logic behind both the CLI and the console
+model.py              one model layer, four backends (sim / ollama / anthropic / bedrock)
 ticket_loader.py      loads a ticket from a .txt OR a .pdf
 data/accounts.json    a fake account store (the "secret" is a fake API key)
 tickets/clean_ticket.txt      a normal customer ticket
@@ -27,6 +32,24 @@ tickets/poisoned_ticket.pdf   the same attack hidden inside a PDF attachment
 tools/make_poisoned_pdf.py    regenerate the poisoned PDF (needs reportlab)
 logs/detections.log   written by the hardened agent when it catches an attack
 ```
+
+## Two ways to run it
+
+Everything below works **offline with nothing installed** — the default backend
+is a simulation that mimics how a model follows instructions hidden in its
+input, so the leak and the block are deterministic and repeatable.
+
+- **The browser console** (`python app.py` → http://localhost:5111) is the
+  visual lab: pick a ticket, flip between the Vulnerable and Hardened build,
+  and watch the verdict, the tool activity, the customer-facing reply and the
+  security log change. This is the one to use on a second monitor while you
+  follow along, and the one to record.
+- **The CLI** is the same engine with the same results, and is what the
+  scanner runs against.
+
+Port is `5100 + chapter`, like every visual lab here. The YouTube video shows this lab on :5000 — `PORT=5000 python app.py` reproduces it exactly.
+
+This lab is shared. Pillars 2, 3 and 4 reference it rather than forking four copies that drift apart; see `SHARED-IPI.md`.
 
 ## Setup — pick a backend
 
@@ -57,19 +80,36 @@ export AWS_REGION=us-east-1
 
 ## Run the loop
 
+This is the same four-step loop every module in the course runs — deploy weak,
+**scan**, harden, **scan again** — so that "it's fixed" is something a tool
+says, not something you feel.
+
 ```
 # 1. BUILD + RELEASE — a normal ticket works
 python agent_vulnerable.py tickets/clean_ticket.txt
 
-# 2. BREAK — one poisoned ticket, no code changes, and it leaks a secret
+# 2. SCAN — four architectural layers are missing, and the scanner says which
+python ipi_scan.py agent_vulnerable.py          # 4 gaps, exit code 1
+
+# 3. BREAK — one poisoned ticket, no code changes, and it leaks a secret
 python agent_vulnerable.py tickets/poisoned_ticket.txt
 
-# 3. HARDEN — same attacker, same ticket, dead on arrival
+# 4. HARDEN — same attacker, same ticket, dead on arrival
 python agent_hardened.py tickets/poisoned_ticket.txt
 
-# 4. and the hardened agent still serves real customers
+# 5. SCAN AGAIN — the gaps are gone
+python ipi_scan.py agent_hardened.py            # PASS, exit code 0
+
+# 6. and the hardened agent still serves real customers
 python agent_hardened.py tickets/clean_ticket.txt
 ```
+
+The scanner is static: it reads the agent source and checks for the four
+layers. That is deliberate. A passing attack proves a vulnerability exists; it
+never proves one is *absent*, because you only tested the attack you thought
+of. Checking that the architecture is present is the claim you can actually
+defend. `python ipi_scan.py --selftest` runs the whole thing offline against
+both agents and known-good fixtures.
 
 Same attack, hidden in a PDF instead of pasted text (needs `pip install pypdf`):
 

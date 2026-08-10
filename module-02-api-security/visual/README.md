@@ -3,7 +3,7 @@
 Four controls as cards, proved by firing the four attacks at your **running
 API** and reading `attack.py`'s own verdicts.
 
-```powershell
+```bash
 # terminal 1 — the API, weak
 $env:HWZ_PROFILE="baseline"
 python -m uvicorn app.main:app --port 8000
@@ -15,7 +15,7 @@ python app.py                     # http://localhost:5109
 
 Then flip the profile, restart the API, and refresh this page:
 
-```powershell
+```bash
 $env:HWZ_PROFILE="hardened"
 python -m uvicorn app.main:app --port 8000
 ```
@@ -41,7 +41,7 @@ own code. If a judge changes tomorrow, this changes with it.
 ## If the API is not running
 
 You get one finding that tells you exactly what to start, rather than four
-confusing timeouts. Fail fast and say why.
+confusing timeouts. That is deliberate — fail fast and say why.
 
 ## A4 and the honest caveat
 

@@ -183,22 +183,6 @@ def collect_live(project, region):
             meta = kms.describe_key(KeyId=kid)["KeyMetadata"]
             if meta.get("KeyManager") != "CUSTOMER":
                 continue
-            # A key scheduled for deletion is on its way out, not a live control.
-            # After a teardown-and-redeploy the old key lingers in PendingDeletion
-            # for its recovery window, still tagged; flagging its rotation is
-            # noise about a key that no longer protects anything. Skip it.
-            if meta.get("KeyState") in ("PendingDeletion", "PendingReplicaDeletion"):
-                continue
-            # Scope to this lab's own keys by tag, exactly like the S3, EC2, VPC
-            # and CloudTrail collectors above. Without this the scanner reaches
-            # OUT of your lab and flags every unrelated customer-managed key in
-            # the account (an old experiment, another project) as a false
-            # finding -- which breaks the promise at the top of this file that
-            # "the scanner never touches anything but your lab".
-            tags = {t["TagKey"]: t["TagValue"]
-                    for t in kms.list_resource_tags(KeyId=kid).get("Tags", [])}
-            if tags.get("Project") != tagval:
-                continue
             rot = kms.get_key_rotation_status(KeyId=kid).get("KeyRotationEnabled", False)
             snap["kms_keys"].append({"id": kid, "rotation": rot})
         except Exception: pass
@@ -222,49 +206,7 @@ def collect_live(project, region):
 # ---------------------------------------------------------------------------
 # REPORT + CLI
 # ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# LAB CONSOLE MAP  (added) — ties this CLI run to its card in the HWZ Lab
-# Console, so terminal output and the dashboard are provably the same story.
-#   findings (rc=1) -> the red card;   clean (rc=0) -> the green card.
-# ---------------------------------------------------------------------------
-_CONSOLE_CARD = 'Cloud Foundation'
-_CONSOLE_META = 'Chapter 8 · Pillar: Cloud'
-_CONSOLE_WEAK = 'NAKED'
-_CONSOLE_HARD = 'PASS'
-_CONSOLE_UNIT = 'finding(s)'
-_CONSOLE_WLINE = 'the account is wide open'
-_CONSOLE_HLINE = 'scoped, encrypted, logged, bounded'
-
-
-def console_map(rc, n):
-    rule = "  " + "─" * 62
-    print()
-    print(rule)
-    print("  LAB CONSOLE MAP  —  what you just saw, on the chart")
-    print(rule)
-    print(f"  Card   : {_CONSOLE_CARD}   ({_CONSOLE_META})")
-    if rc == 0:
-        print(f'  State  : HARDENED  · green   Console verdict: "{_CONSOLE_HARD}"')
-        print(f"  Match  : {_CONSOLE_HLINE} — exactly what the green card shows.")
-    else:
-        print(f'  State  : WEAK      · red     Console verdict: "{_CONSOLE_WEAK}"')
-        print(f"  Match  : {n} {_CONSOLE_UNIT} — {_CONSOLE_WLINE},")
-        print("           which is what the red card shows.")
-    print(f'  Chart  : flip the "{_CONSOLE_CARD}" card in the Lab Console for the same result.')
-    print(rule)
-
-
-def report(*a, **k):
-    rc = _report(*a, **k)
-    try:
-        n = len(a[-1])
-    except Exception:
-        n = rc
-    console_map(rc, n)
-    return rc
-
-
-def _report(findings):
+def report(findings):
     if not findings:
         print("PASS. No findings. This foundation is hardened.")
         return 0

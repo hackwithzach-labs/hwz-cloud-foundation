@@ -33,17 +33,6 @@ def mock_model_complete(prompt, max_tokens):
     return f"[mock completion for {prompt[:40]!r}]", total_tokens, cost
 
 
-@app.get("/")
-async def root():
-    # A landing page so visiting :8000 in a browser isn't a bare "Not Found".
-    # The minimal API has no controls at all — that is the whole point.
-    return {"service": "HWZ Inference API (minimal)", "version": "0.1",
-            "controls": "none — this is the irreducible core, no security on purpose",
-            "endpoints": {"POST /v1/complete": "prompt in, mock completion out",
-                          "GET /docs": "interactive API explorer"},
-            "note": "/v1/complete is POST-only; use curl or the attack script, not the address bar."}
-
-
 @app.post("/v1/complete")
 async def complete(request: Request):
     raw = await request.body()                        # 1. raw bytes off the wire

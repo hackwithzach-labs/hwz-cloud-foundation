@@ -47,21 +47,54 @@ git config core.hooksPath .githooks
 
 ## Program modules
 
-| Module | Folder | Status |
-|---|---|---|
-| 1. The Cloud Foundation | `Cloud-and-AI-Security-Engineer/module-01-cloud-foundation` | Ready |
-| 2. API Security on the foundation | | Coming |
-| 3. Observability and Detection | | Coming |
-| 4. Pillar 1: LLM Security | | Coming |
-| 5. Pillar 2: AI APIs and MCP | | Coming |
-| 6. Pillar 3: Agentic AI | | Coming |
-| 7. Pillar 4: Vibe Coding | | Coming |
-| 8. Capstone: all pillars, one foundation | | Coming |
+| Module | Chapter | Folder | Visual lab | Status |
+|---|---|---|---|---|
+| 1. The Cloud Foundation | 8 | `module-01-cloud-foundation` | `:5108` | Ready |
+| 2. API Security on the foundation | 9 | `module-02-api-security` | `:5109` | Ready |
+| 3. Observability and Detection | 10 | `module-03-observability-detection` | `:5110` | Ready |
+| 4. Pillar 1: LLM Security | 11 | `module-04-llm-security` | `:5111` (shared) | Ready |
+| 5. Pillar 2: AI APIs and MCP | 12 | `module-05-ai-apis-mcp` | `:5112` | Ready |
+| 6. Pillar 3: Agentic AI | 13 | `module-06-agentic-ai` | `:5113` | Ready |
+| 7. Pillar 4: Vibe Coding | 14 | `module-07-vibe-coding` | `:5114` | Ready |
+| 8. Capstone: all pillars, one foundation | 15 | `module-08-capstone` | `:5115` | Ready |
+
+Module number is chapter number minus 7. Chapter 8 is module 1.
+
+## Two ways to run every lab
+
+Each module ships a **CLI lab** — deploy weak, scan, harden, scan again, with an
+offline `--selftest` — and a **visual lab**, a small browser console under
+`visual/` that renders what that module's own scanner returns. The console runs
+no checks of its own; it imports the scanner. One scanner, two renderings, so
+the browser and the terminal cannot disagree with each other.
+
+Ports are `5100 + chapter number`, so no two visual labs collide.
+
+```bash
+cd module-01-cloud-foundation/visual
+pip install -r requirements.txt
+python app.py            # http://localhost:5108
+```
+
+## The shared indirect-injection lab
+
+`module-04-llm-security/visual/` is Chapter 11's visual lab and the one lab that
+is *shared*. It is the canonical indirect prompt-injection exercise — the one
+from the video — and Pillars 2, 3 and 4 reference it instead of forking four
+copies that drift apart. It runs offline with nothing installed:
+
+```bash
+cd module-04-llm-security/visual
+pip install flask
+python app.py            # http://localhost:5111
+```
+
+See `module-04-llm-security/visual/SHARED-IPI.md` for which pillar layers what on top.
 
 ## Start now
 
 ```bash
-cd Cloud-and-AI-Security-Engineer/module-01-cloud-foundation
+cd module-01-cloud-foundation
 # read README.md, then TEACH.md, then follow RUNBOOK.md
 ```
 

@@ -1,0 +1,23 @@
+{
+  "_comment": "What an assistant actually returns for 'a Terraform module for an S3 bucket and an IAM role that can use it', accepted unedited. Every gap here is a default the model did not think to change.",
+  "s3_buckets": [
+    {
+      "name": "generated-bucket",
+      "default_encryption": false,
+      "block_public_access": false,
+      "tls_only_policy": false,
+      "versioning": false
+    }
+  ],
+  "iam_roles": [
+    {
+      "name": "generated-role",
+      "has_wildcard_allow": true,
+      "has_destructive_deny": false
+    }
+  ],
+  "kms_keys": [],
+  "security_groups": [],
+  "vpcs": [],
+  "cloudtrails": []
+}

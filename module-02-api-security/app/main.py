@@ -182,35 +182,6 @@ async def complete(request: Request, authorization: str | None = Header(default=
     return JSONResponse({"completion": completion, "tokens": used_tokens, "cost_usd": round(cost, 5)})
 
 
-@app.get("/")
-async def root():
-    """A self-describing landing page for the API. Visiting :8000 in a browser
-    shows what this service is, which profile it is running, the live state of
-    the four Chapter-9 controls (all off on baseline, all on when hardened), and
-    where to send a real request. It reveals no secrets — just the API's shape."""
-    profile = "hardened" if C.enforce_caps else "baseline"
-    return {
-        "service": "HWZ Inference API",
-        "version": "2.0",
-        "profile": profile,
-        "controls": {
-            "verify_audience": C.verify_audience,
-            "validate_schema": C.validate_schema,
-            "enforce_caps": C.enforce_caps,
-            "structured_audit": C.structured_audit,
-        },
-        "endpoints": {
-            "POST /v1/complete": "inference — send a Bearer token and JSON {prompt, max_tokens}",
-            "GET /healthz": "liveness check",
-            "GET /docs": "interactive API explorer (Swagger UI)",
-        },
-        "note": ("This is a headless inference API — the address bar can only GET, "
-                 "but /v1/complete is POST-only, so drive it from the CLI: "
-                 "python attack/attack.py --url http://127.0.0.1:8000  (or curl with a token). "
-                 f"You are on the {profile.upper()} profile."),
-    }
-
-
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok", "profile": "hardened" if C.enforce_caps else "baseline",

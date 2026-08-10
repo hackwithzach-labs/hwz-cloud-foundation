@@ -391,18 +391,18 @@ resource "aws_cloudwatch_dashboard" "soc" {
       {
         type = "metric", x = 0, y = 0, width = 12, height = 6
         properties = {
-          title  = "Unauthorized (401/403) per minute"
-          region = var.region
-          view   = "timeSeries"
+          title   = "Unauthorized (401/403) per minute"
+          region  = var.region
+          view    = "timeSeries"
           metrics = [["HWZ/AppSecurity", "UnauthorizedAccess"]]
         }
       },
       {
         type = "metric", x = 12, y = 0, width = 12, height = 6
         properties = {
-          title  = "Cost-cap (429) rejections per minute"
-          region = var.region
-          view   = "timeSeries"
+          title   = "Cost-cap (429) rejections per minute"
+          region  = var.region
+          view    = "timeSeries"
           metrics = [["HWZ/AppSecurity", "CostCapBreach"]]
         }
       }

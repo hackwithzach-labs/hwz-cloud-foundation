@@ -20,7 +20,7 @@ ollama pull llama3.1      # a tool-capable model (only needed once)
 python app.py
 ```
 
-Then open http://localhost:5000 in your browser.
+Then open http://localhost:5111 in your browser. (The video shows :5000; `PORT=5000 python app.py` reproduces it.)
 
 macOS / Linux is the same, minus the PowerShell quirks.
 

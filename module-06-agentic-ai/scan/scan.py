@@ -88,49 +88,7 @@ def collect_live(project: str, region: str) -> dict:
     return {k: False for k in SNAPSHOT_KEY.values()}
 
 
-# ---------------------------------------------------------------------------
-# LAB CONSOLE MAP  (added) — ties this CLI run to its card in the HWZ Lab
-# Console, so terminal output and the dashboard are provably the same story.
-#   findings (rc=1) -> the red card;   clean (rc=0) -> the green card.
-# ---------------------------------------------------------------------------
-_CONSOLE_CARD = 'Agent Loop'
-_CONSOLE_META = 'Chapter 13 · Pillar 3: Agentic'
-_CONSOLE_WEAK = '5/5 abuses succeeded'
-_CONSOLE_HARD = '0/5 — each died at a different lock'
-_CONSOLE_UNIT = 'loop-control gap(s)'
-_CONSOLE_WLINE = 'the loop turned against you'
-_CONSOLE_HLINE = 'goal locked, memory guarded, loop bounded, human-gated'
-
-
-def console_map(rc, n):
-    rule = "  " + "─" * 62
-    print()
-    print(rule)
-    print("  LAB CONSOLE MAP  —  what you just saw, on the chart")
-    print(rule)
-    print(f"  Card   : {_CONSOLE_CARD}   ({_CONSOLE_META})")
-    if rc == 0:
-        print(f'  State  : HARDENED  · green   Console verdict: "{_CONSOLE_HARD}"')
-        print(f"  Match  : {_CONSOLE_HLINE} — exactly what the green card shows.")
-    else:
-        print(f'  State  : WEAK      · red     Console verdict: "{_CONSOLE_WEAK}"')
-        print(f"  Match  : {n} {_CONSOLE_UNIT} — {_CONSOLE_WLINE},")
-        print("           which is what the red card shows.")
-    print(f'  Chart  : flip the "{_CONSOLE_CARD}" card in the Lab Console for the same result.')
-    print(rule)
-
-
-def report(*a, **k):
-    rc = _report(*a, **k)
-    try:
-        n = len(a[-1])
-    except Exception:
-        n = rc
-    console_map(rc, n)
-    return rc
-
-
-def _report(gaps: list[dict]) -> int:
+def report(gaps: list[dict]) -> int:
     if not gaps:
         print("PASS. The goal is locked, memory is guarded, the loop is "
               "bounded, tools are least-privilege, and a human gates every "

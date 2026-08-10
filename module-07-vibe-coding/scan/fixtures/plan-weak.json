@@ -1,0 +1,45 @@
+{
+  "_comment": "Trimmed `terraform show -json plan.out` for generated/weak/main.tf. Trimmed, not invented: the keys and nesting are the real plan shape, with the noise (provider config, prior state, timestamps) removed so the translator can be read against it. Its purpose is to prove the translator turns a plan into a snapshot with something in it -- an empty snapshot passes every check, which is the dangerous way for a gate to fail.",
+  "format_version": "1.2",
+  "terraform_version": "1.9.5",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket.data",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "data",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "bucket": "generated-bucket",
+            "force_destroy": false
+          }
+        },
+        {
+          "address": "aws_iam_role.app",
+          "mode": "managed",
+          "type": "aws_iam_role",
+          "name": "app",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "name": "generated-role",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ec2.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}"
+          }
+        },
+        {
+          "address": "aws_iam_role_policy.app",
+          "mode": "managed",
+          "type": "aws_iam_role_policy",
+          "name": "app",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": {
+            "name": "generated-role-policy",
+            "role": "generated-role",
+            "policy": "{\"Statement\":[{\"Action\":\"s3:*\",\"Effect\":\"Allow\",\"Resource\":\"*\"}],\"Version\":\"2012-10-17\"}"
+          }
+        }
+      ]
+    }
+  }
+}

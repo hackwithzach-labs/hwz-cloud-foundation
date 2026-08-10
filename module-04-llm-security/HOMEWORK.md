@@ -27,7 +27,7 @@ you go build. On the second, Q&A. Deliverables below go in your course repo.
 
 ## Indirect-injection lab (shared)
 
-- In `prompt-injection-lab/`, run the poisoned **PDF** ticket through the
+- In `module-04-llm-security/visual/`, run the poisoned **PDF** ticket through the
   vulnerable agent (it leaks) and the hardened agent (it is blocked). Name which
   of the four layers stopped it, and why the fix is architecture, not a prompt.
 

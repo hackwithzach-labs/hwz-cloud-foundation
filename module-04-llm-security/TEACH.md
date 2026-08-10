@@ -25,7 +25,7 @@ flood carries no prompt — so a real AI system runs both.
 - **Indirect**: the attacker plants the instruction inside content the model is
   later asked to read (a ticket, a PDF, a RAG chunk, a web page). Nobody types it
   at the model; it obeys on an innocent user's behalf. This is the one that ends
-  up in incident reports, and the shared lab (`prompt-injection-lab/`) is where
+  up in incident reports, and the shared lab (`module-04-llm-security/visual/`) is where
   students feel it.
 
 ## > COST SAFETY

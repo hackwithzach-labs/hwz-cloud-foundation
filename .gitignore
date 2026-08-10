@@ -1,19 +1,23 @@
-# Terraform state and vars: never commit these
+# Terraform state: never commit this. It holds resource IDs, ARNs, account
+# numbers, and sometimes secrets in plaintext.
 *.tfstate
 *.tfstate.*
+
+# Variable files are ignored by default because a student's own .tfvars will
+# contain their account ID and region.
+#
+# The two exceptions below are NOT student files -- they are course content.
+# baseline.tfvars is the deliberately weak profile and hardened.tfvars is the
+# fixed one, and the entire teaching method is "deploy baseline, scan, switch
+# to hardened, scan again." A bare *.tfvars rule silently excluded both from
+# every module, so the repo shipped labs that could not be run. Keep these
+# negations. If you add a new profile, add it here too.
 *.tfvars
 !*.tfvars.example
-# ...EXCEPT the two lab profiles. baseline.tfvars and hardened.tfvars are not
-# secrets, they ARE the lesson: the weak/hardened switch every module turns on.
-# Ignoring them shipped four modules to students with no way to run either
-# profile. terraform.tfvars (which can hold real values) stays ignored.
 !baseline.tfvars
 !hardened.tfvars
+
 .terraform/
-# archive_file writes the Lambda deployment zip here at plan time. It is a
-# build artifact derived from lambda_src/ -- committing it means the repo can
-# disagree with the source it was built from.
-.build/
 .terraform.lock.hcl
 # Plan files: a plan file is a zip with an embedded state snapshot.
 # The pair *.tfplan AND tfplan* matters: the file actually created is often
@@ -33,3 +37,10 @@ venv/
 snapshot*.json
 !scan/fixtures/*.json
 .env
+
+# Terraform build artifacts. The producers module zips its Lambda source
+# into .build/ at plan time; that zip is generated, machine-specific, and
+# was staged by accident in the launch commit.
+.build/
+*.zip
+!hwz-course-repo*.zip

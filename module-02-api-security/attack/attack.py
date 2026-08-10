@@ -71,36 +71,6 @@ def mint(aud: str, sub: str = "attacker") -> str:
 
 
 # ---------------------------------------------------------------------------
-# LAB CONSOLE MAP
-# Ties this CLI run to its card in the HWZ Lab Console, so what you read in the
-# terminal and what you flip on the dashboard are provably the same story.
-#   weak  (any attack SUCCEEDED) -> the red   card, verdict "BREACHED"
-#   hard  (all blocked)          -> the green card, verdict "BLOCKED"
-# ---------------------------------------------------------------------------
-CONSOLE_CARD = "API Security"      # Chapter 9  ·  Pillar: Cloud
-CONSOLE_WEAK = "BREACHED"          # red   — the API leaks and over-serves
-CONSOLE_HARD = "BLOCKED"           # green — every automated attack blocked
-
-
-def console_map(fails: int) -> None:
-    rule = "  " + "─" * 62
-    print()
-    print(rule)
-    print("  LAB CONSOLE MAP  —  what you just saw, on the chart")
-    print(rule)
-    print(f"  Card   : {CONSOLE_CARD}   (Chapter 9  ·  Pillar: Cloud)")
-    if fails > 0:
-        print(f'  State  : WEAK      · red     Console verdict: "{CONSOLE_WEAK}"')
-        print(f"  Match  : {fails} attack(s) SUCCEEDED — the API leaks and over-serves,")
-        print("           which is exactly what the red card shows.")
-    else:
-        print(f'  State  : HARDENED  · green   Console verdict: "{CONSOLE_HARD}"')
-        print("  Match  : every automated attack blocked — exactly what the green card shows.")
-    print(f'  Chart  : flip the "{CONSOLE_CARD}" card in the Lab Console for the same result.')
-    print(rule)
-
-
-# ---------------------------------------------------------------------------
 # LIVE ATTACKS  (need the running app)
 # ---------------------------------------------------------------------------
 def run_live(base_url: str) -> int:
@@ -155,10 +125,8 @@ def run_live(base_url: str) -> int:
     print("=" * 60)
     if fails:
         print(f"{fails} attack(s) SUCCEEDED. The API is insecure. (Expected on baseline.)")
-        console_map(fails)
         return 1
     print("All automated attacks blocked. (Expected on hardened.)")
-    console_map(0)
     return 0
 
 
@@ -181,8 +149,6 @@ def selftest() -> int:
     ok &= judge_blind_request([json.dumps({"audit": True, "token_id": "ghost"})], "ghost") is True
 
     print("selftest:", "PASS" if ok else "FAIL")
-    print('  (these judges drive the "API Security" card: any SUCCEEDED -> '
-          'BREACHED/red, all blocked -> BLOCKED/green)')
     return 0 if ok else 1
 
 

@@ -17,7 +17,7 @@ cover all four pillars and all eight hands-on chapters.
 ```bash
 pip install -r requirements.txt
 python app.py
-# open http://localhost:5000
+# open http://localhost:5116
 ```
 
 ## Live counts

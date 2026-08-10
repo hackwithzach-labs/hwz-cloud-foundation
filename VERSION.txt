@@ -1,15 +1,45 @@
 hwz-course-repo
-version: 2026.07.23a
-source commit: 949bce4 (restructure: flatten modules to repo root, add module-02 api-security)
-modules: module-01-cloud-foundation, module-02-api-security
-snapshot additions:
-  - diagrams/ starter templates for module-01 and module-02 (Teaching Standard v1.1)
-  - tfplan ignore patterns (root + foundation .gitignore)
-  - REPO_GUIDE.md
-  - module-02 is the build target for Chapter 9 (API Security Foundations)
-  - app/minimal.py: irreducible provision-first API for the Chapter 9 build-along
-  - module-02 DEPLOY.md: full AWS deployment walkthrough (Teaching Standard v1.2 rule 6)
-  - app/main.py: opt-in real Bedrock path (HWZ_USE_REAL_MODEL) + boto3 dep
-  - credentials: IAM Identity Center SSO short-lived login everywhere; no stored access keys (Teaching Standard v1.3 rule 7)
+version: 2026.08.10a  — LAUNCH
 
-Rebuild and re-upload this zip on every repo release. Sequencing and paths: V4_DEPLOY_CHECKLIST.
+LAYOUT (this is the release that makes the repo match the books)
+
+  module-01-cloud-foundation          ch 8   visual :5108
+  module-02-api-security              ch 9   visual :5109
+  module-03-observability-detection   ch 10  visual :5110
+  module-04-llm-security              ch 11  visual :5111  <- the injection lab
+  module-05-ai-apis-mcp               ch 12  visual :5112
+  module-06-agentic-ai                ch 13  visual :5113
+  module-07-vibe-coding               ch 14  visual :5114  NEW
+  module-08-capstone                  ch 15  visual :5115  NEW
+  hwz-lab-console                     ch 16         :5116
+
+WHAT CHANGED
+
+  The prompt-injection lab moved from the repo root into
+  module-04-llm-security/visual/ and now runs on 5111 like every other visual
+  lab. It is still the shared lab -- Pillars 2, 3 and 4 reference it rather
+  than forking copies -- and PORT=5000 still reproduces the YouTube video
+  exactly. All cross-references were repointed; there is no prompt-injection-lab
+  at the root any more.
+
+  module-07-vibe-coding and module-08-capstone added. Chapters 14 and 15 have
+  been in the book for a while with no module behind them; they now exist,
+  ship offline selftests, and appear in the lab map with real folder names
+  instead of descriptions of what they would do.
+
+  Every module now ships its visual/ directory. None of them were in the
+  repository before this release, so the books described consoles nobody could
+  run.
+
+  hwz-lab-console moved from port 5000 to 5116, which is what the Quick Start
+  has always documented, and which no longer collides with the injection lab.
+
+VERIFIED IN THIS BUILD (see VERIFICATION.md)
+  Green wall 11/11. All nine visual labs answered HTTP 200 on their documented
+  ports. Every module named in the LIGHT PDF, the FULL PDF and the Quick Start
+  exists as a folder in this tree. Terraform fmt clean, all Python compiles,
+  no credentials or state files staged, all 13 tfvars profiles tracked.
+
+NOT VERIFIED HERE
+  terraform init/validate/plan -- the provider registry is unreachable from the
+  build container. Run that gate per module before teaching from it.

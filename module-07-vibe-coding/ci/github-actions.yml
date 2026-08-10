@@ -1,0 +1,39 @@
+# .github/workflows/pre-deploy-gate.yml
+#
+# Wire the Chapter 8 scanner in front of every apply. An insecure generation
+# never reaches an account, because the build goes red before apply runs and
+# the gate is not a step anyone can skip by forgetting.
+name: pre-deploy gate
+
+on: [push, pull_request]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Prove the gate works before trusting its verdict. Offline, no AWS,
+      # no credentials -- so this step also runs on a fork's pull request.
+      - name: Prove the gate
+        run: python3 module-07-vibe-coding/scan/scan.py --selftest
+
+      - name: Plan
+        working-directory: generated/hardened
+        run: |
+          terraform init -backend=false
+          terraform plan -out plan.out
+          terraform show -json plan.out > "$GITHUB_WORKSPACE/plan.json"
+
+      # The line that matters. Non-zero exit fails the job, and a failed job
+      # blocks the merge. Put apply in a later job that needs: [gate].
+      - name: Gate the plan
+        run: ./module-07-vibe-coding/ci/gate.sh plan.json

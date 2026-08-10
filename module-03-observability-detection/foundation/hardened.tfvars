@@ -36,7 +36,7 @@ log_retention_days   = 7
 lambda_producer    = true  # no idle cost
 container_producer = true  # no idle cost
 ec2_producer       = false # flip to true to watch the CloudWatch agent work.
-                           # ~$0.01/hr. Destroy at session end.
+# ~$0.01/hr. Destroy at session end.
 
 # --- the detection layer -----------------------------------------------------
 detections_enabled = true

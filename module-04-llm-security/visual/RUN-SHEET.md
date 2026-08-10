@@ -13,7 +13,7 @@ on mobile. Editor open in split. Black, red, white only in overlays.
 ## 0. One time setup (do this before you record, off camera)
 
 ```
-cd prompt-injection-lab
+cd module-04-llm-security/visual
 python3 -m venv .venv && source .venv/bin/activate     # optional, keeps it tidy
 pip install pypdf                                       # needed for the PDF ticket (Shot 12A)
 ```

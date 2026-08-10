@@ -39,18 +39,18 @@ CARDS = [
     {"key": "verify-audience", "name": "Audience-Bound Tokens", "chain": "who is calling",
      "why": "A JWT is only proof if you check who it was issued for. Without an audience check, any service holding the signing secret can call your model as anyone."},
     {"key": "validate-schema", "name": "Request Schema", "chain": "what they may send",
-     "why": "A JSON Schema on every body. Without it the request is whatever the caller feels like sending &mdash; 50,000 characters, a max_tokens of 999999, a string where a number belongs."},
+     "why": "A JSON Schema on every body. Without it the request is whatever the caller feels like sending — 50,000 characters, a max_tokens of 999999, a string where a number belongs."},
     {"key": "enforce-caps", "name": "Rate and Cost Caps", "chain": "how much they may spend",
      "why": "Per-token rate and cost limits. This is the control between a compromised key and a five-figure bill, and it is the one people add after the invoice arrives."},
     {"key": "structured-audit", "name": "Structured Audit Log", "chain": "what you can prove after",
-     "why": "One JSON line per request with fields you can filter on. This is what Chapter 10's metric filters count &mdash; prose in stderr is not evidence."},
+     "why": "One JSON line per request with fields you can filter on. This is what Chapter 10's metric filters count — prose in stderr is not evidence."},
 ]
 
 lab = VisualLab(
     scanner=scanner,
     chapter=9,
     pillar="Pillar: Cloud",
-    title="API Security &mdash; weak vs hardened profile",
+    title="API Security — weak vs hardened profile",
     subtitle="Four controls, one environment variable. The model is not your attack surface; the API in front of it is.",
     cards=CARDS,
     weak_word="BREACHED",
@@ -58,7 +58,7 @@ lab = VisualLab(
     weak_line="Attacks are landing. The API leaks and over-serves.",
     hard_line="Every automated attack blocked. Same code, same cloud, one environment variable.",
     cli_hint="python attack/attack.py --url http://localhost:8000",
-    chain_footer="This chapter's weakness is not in AWS. <b>It is four flags in app/config.py</b> &mdash; which is where most real API breaches live.",
+    chain_footer="This chapter's weakness is not in AWS. <b>It is four flags in app/config.py</b> — which is where most real API breaches live.",
     demo_snapshots={"weak": WEAK, "hardened": HARD},
     needs_aws=False,
 )

@@ -48,7 +48,7 @@ records the resulting posture. Idempotent.
 
 ## The shared indirect-injection lab
 
-`prompt-injection-lab/` is the canonical indirect-injection exercise this and
+`module-04-llm-security/visual/` is the canonical indirect-injection exercise this and
 every later pillar builds on (Pillar 3, Agentic AI, leans on it hardest). A
 poisoned document the agent ingests, four hardening layers, none of them a
 prompt. See that folder's `LESSON.md`.

@@ -1,0 +1,22 @@
+The prompt that produced generated/hardened/main.tf. Same assistant, same task.
+The only thing that changed is that the Chapter 8 control map moved into the ask.
+
+----
+Write me a Terraform module for an S3 bucket and an IAM role that can use it.
+
+Security requirements, all of them non-negotiable:
+- The bucket has default encryption with a customer-managed KMS key.
+- The bucket has Block Public Access with all four settings enabled.
+- The bucket has a policy that denies any request where
+  aws:SecureTransport is false.
+- The bucket has versioning enabled.
+- The role's policy grants s3:GetObject and s3:PutObject only, scoped to
+  this bucket's ARN and its objects. No wildcard actions, no Resource "*".
+- The role's policy carries an explicit Deny on destructive actions
+  (s3:DeleteBucket, cloudtrail:StopLogging, kms:ScheduleKeyDeletion).
+- The KMS key has rotation enabled.
+----
+
+Read the two prompts side by side. That difference is the cheapest security
+control in this entire course: you moved the control map into the input, so the
+output needed less correction.

@@ -39,7 +39,7 @@ every block is logged into the Chapter 10 SOC.
 
 ## Indirect injection
 
-The shared indirect-injection lab lives in `prompt-injection-lab/` and is the one
+The shared indirect-injection lab lives in `module-04-llm-security/visual/` and is the one
 every LLM and Agentic pillar builds on. A poisoned document the agent is asked to
 read, hardened with four architectural layers.
 

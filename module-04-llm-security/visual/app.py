@@ -13,7 +13,7 @@ cost). Flip to Simulation for a guaranteed-clean take.
     pip install flask
     ollama serve                 # in another terminal
     ollama pull llama3.1         # a tool-capable local model
-    python app.py                # then open http://localhost:5000
+    python app.py                # then open http://localhost:5111
 
 (c) 2026 Vigilantia Technologies INC. HackWithZach. Education/defense only.
 """
@@ -27,7 +27,13 @@ import engine
 from ticket_loader import load_ticket
 
 APP_DIR = Path(__file__).resolve().parent
-DEFAULT_BACKEND = os.environ.get("HWZ_BACKEND", "ollama").lower()
+# Default to the simulation backend, which needs nothing installed. The CLI
+# agents already default to "sim"; the console used to default to "ollama", so
+# a student who opened the console before installing Ollama got a 502 and a
+# connection-refused trace on their very first click. The lesson here is prompt
+# injection, not local-model plumbing -- so the zero-install path is the
+# default and the real model is one dropdown away.
+DEFAULT_BACKEND = os.environ.get("HWZ_BACKEND", "sim").lower()
 
 TICKET_FILES = {
     "clean": "tickets/clean_ticket.txt",
@@ -186,8 +192,8 @@ PAGE = r"""<!doctype html>
     </div>
     <span class="lbl" style="margin-left:10px">Model</span>
     <select id="backend">
+      <option value="sim">Simulation (no install needed)</option>
       <option value="ollama">Ollama (local, real model)</option>
-      <option value="sim">Simulation (safe take)</option>
     </select>
   </div>
 
@@ -286,8 +292,15 @@ PAGE = r"""<!doctype html>
 
   function render_error(msg){
     setVerdict("v-idle", "Backend error");
+    // A student who picks Ollama without it running should be told how to get
+    // back to a working lab, not handed a connection-refused trace and left.
+    var hint = /ollama/i.test(msg)
+      ? '<br><br><b>You can still run the whole lab.</b> Set <b>Model</b> back to '
+        + '"Simulation (no install needed)" and press Send again. The attack and '
+        + 'the defense behave the same; only the wording of the reply changes.'
+      : '';
     document.getElementById("reply").innerHTML =
-      '<span class="err">' + esc(msg) + '</span>';
+      '<span class="err">' + esc(msg) + hint + '</span>';
   }
 
   function render(j){
@@ -339,7 +352,9 @@ PAGE = r"""<!doctype html>
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "5000"))
+    # 5100 + chapter number, like every visual lab in this course.
+    # The YouTube video shows :5000 -- PORT=5000 reproduces it exactly.
+    port = int(os.environ.get("PORT", "5111"))
     print(f"\n  SecureAI Support Console")
     print(f"  backend default: {DEFAULT_BACKEND}  (switch in the UI)")
     print(f"  open:  http://localhost:{port}\n")

@@ -14,7 +14,7 @@ the walkthrough.
 Run:
     pip install flask
     python app.py
-    open http://localhost:5000
+    open http://localhost:5116
 
 Where it can reach the sibling module code (run it from inside the monorepo,
 next to module-01 .. module-06), the console recomputes the counts LIVE from the
@@ -370,5 +370,8 @@ def api_run(key, posture):
 if __name__ == "__main__":
     print("  HackWithZach Lab Console")
     print(f"  live modules: {', '.join(LIVE) or '(none — run inside the monorepo for live counts)'}")
-    print("  open:  http://localhost:5000")
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    # 5116. The Quick Start documents this port, and 5000 used to collide
+    # with the prompt-injection lab before it moved to module-04/visual:5111.
+    port = int(os.environ.get("PORT", "5116"))
+    print(f"  open:  http://localhost:{port}")
+    app.run(host="127.0.0.1", port=port, debug=False)

@@ -1,0 +1,23 @@
+{
+  "_comment": "The same request, re-prompted with the Chapter 8 control map in the ask. Same assistant, same task; the difference is entirely in what was demanded.",
+  "s3_buckets": [
+    {
+      "name": "generated-bucket",
+      "default_encryption": true,
+      "block_public_access": true,
+      "tls_only_policy": true,
+      "versioning": true
+    }
+  ],
+  "iam_roles": [
+    {
+      "name": "generated-role",
+      "has_wildcard_allow": false,
+      "has_destructive_deny": true
+    }
+  ],
+  "kms_keys": [],
+  "security_groups": [],
+  "vpcs": [],
+  "cloudtrails": []
+}

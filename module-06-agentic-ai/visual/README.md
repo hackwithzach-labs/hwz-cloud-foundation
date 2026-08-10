@@ -40,4 +40,26 @@ screen, so a simulation can never pass as your account.
 
 Terminal equivalent: `python scan/scan.py --project hwz --region us-east-1`
 
+## The other half of this chapter
+
+This console shows the *cloud* posture of the agent stack. The behaviour half —
+an agent reading a poisoned document and acting on what it read — is the shared
+indirect-injection lab, which lives with Chapter 11:
+
+```bash
+cd ../../module-04-llm-security/visual
+python app.py            # http://localhost:5111
+```
+
+Agentic AI is where indirect injection does the most damage, because the agent
+does not just *say* something wrong, it *does* something wrong. Run the
+Vulnerable build against the poisoned ticket, then the Hardened build against
+the same ticket, and notice that what saved you was a tool bound to the session
+identity — code, not a better prompt. Then come back here and confirm the same
+idea holds in the cloud: the agent's execution role scoped to exactly what it
+needs and nothing more.
+
+`../../module-04-llm-security/visual/SHARED-IPI.md` explains how all four pillars share
+that one lab.
+
 © 2026 Vigilantia Technologies INC. ™ HackWithZach.

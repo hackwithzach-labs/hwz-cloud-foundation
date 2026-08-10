@@ -119,12 +119,6 @@ variable "iam_deny_destructive" {
   default     = false
 }
 
-variable "iam_scope_workload" {
-  description = "Scope the workload role to least-privilege actions on this project's own resources instead of a broad service-wide grant. WEAK = false. STRONG = true."
-  type        = bool
-  default     = false
-}
-
 variable "cloudtrail_multi_region" {
   description = "Make the trail multi-region. WEAK = false. STRONG = true."
   type        = bool

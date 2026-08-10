@@ -1,0 +1,11 @@
+# Runtime output. The hardened agent writes detections here when it catches an
+# attack; that is the student's own evidence, not repo content.
+logs/*
+!logs/.gitkeep
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store

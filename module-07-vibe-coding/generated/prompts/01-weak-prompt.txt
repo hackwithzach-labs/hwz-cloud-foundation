@@ -1,0 +1,7 @@
+The prompt that produced generated/weak/main.tf. Copied exactly, including how
+little it asks for. This is the point: nothing about it is unreasonable, and
+it still fails the gate with six findings, three of them HIGH.
+
+----
+Write me a Terraform module for an S3 bucket and an IAM role that can use it.
+----

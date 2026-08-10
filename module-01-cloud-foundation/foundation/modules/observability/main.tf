@@ -50,28 +50,3 @@ resource "aws_iam_role_policy" "flow" {
     }]
   })
 }
-
-# Hardened only: the flow logs role is a project-prefixed role too, so the
-# scanner holds it to the same standard as the workload role -- it must carry an
-# explicit deny on destructive actions. This role only ever needs to write logs,
-# so denying data/evidence destruction costs it nothing and closes the finding.
-resource "aws_iam_role_policy" "flow_deny" {
-  count = var.deny_destructive ? 1 : 0
-  name  = "${var.name_prefix}-flowlogs-deny"
-  role  = aws_iam_role.flow.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Sid    = "DenyDestructive"
-      Effect = "Deny"
-      Action = [
-        "s3:DeleteBucket", "s3:PutBucketPolicy",
-        "cloudtrail:StopLogging", "cloudtrail:DeleteTrail",
-        "kms:ScheduleKeyDeletion", "kms:DisableKey",
-        "secretsmanager:DeleteSecret", "logs:DeleteLogGroup"
-      ]
-      Resource = "*"
-    }]
-  })
-}

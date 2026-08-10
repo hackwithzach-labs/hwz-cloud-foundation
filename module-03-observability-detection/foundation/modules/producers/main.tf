@@ -30,10 +30,10 @@
 ###############################################################################
 
 locals {
-  on       = var.log_delivery_enabled ? 1 : 0
-  lam      = var.lambda_producer ? 1 : 0
-  ec2      = var.ec2_producer ? 1 : 0
-  ctr      = var.container_producer ? 1 : 0
+  on  = var.log_delivery_enabled ? 1 : 0
+  lam = var.lambda_producer ? 1 : 0
+  ec2 = var.ec2_producer ? 1 : 0
+  ctr = var.container_producer ? 1 : 0
 
   # A declared group is only encrypted/retained in the hardened profile. In the
   # weak profile we do not declare it at all, which is the actual default most
@@ -42,9 +42,9 @@ locals {
   ec2_on = var.ec2_producer && var.log_delivery_enabled ? 1 : 0
   ctr_on = var.container_producer && var.log_delivery_enabled ? 1 : 0
 
-  lambda_name        = "${var.name_prefix}-emitter"
-  lambda_log_group   = "/aws/lambda/${var.name_prefix}-emitter"
-  ecs_log_group      = "/${var.name_prefix}/ecs"
+  lambda_name      = "${var.name_prefix}-emitter"
+  lambda_log_group = "/aws/lambda/${var.name_prefix}-emitter"
+  ecs_log_group    = "/${var.name_prefix}/ecs"
 }
 
 # ===========================================================================
@@ -225,9 +225,9 @@ resource "aws_instance" "producer" {
   }
 
   user_data = templatefile("${path.module}/user_data.sh.tftpl", {
-    log_group    = var.app_log_group_name
-    ship_logs    = var.log_delivery_enabled
-    project      = var.project
+    log_group = var.app_log_group_name
+    ship_logs = var.log_delivery_enabled
+    project   = var.project
   })
 
   tags = { Name = "${var.name_prefix}-producer", Project = var.project, Producer = "ec2" }

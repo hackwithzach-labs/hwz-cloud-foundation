@@ -1,0 +1,11 @@
+# Normalise line endings on commit. Without this, a Windows checkout rewrites
+# every file to CRLF and the next clone shows thousands of phantom changes --
+# which is exactly what happened to the duplicate clone of this repo.
+* text=auto eol=lf
+
+# Binary, never touched.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.zip binary
+*.drawio text eol=lf

@@ -32,7 +32,7 @@ waf_enabled        = false -> true    # controls 1, 2 (and 8 via WAF logs)
 ```
 
 Control 7 (the bound tool) is architecture in the app itself — see the shared
-indirect-injection lab (`prompt-injection-lab/`), Layer 2 — and is on in the
+indirect-injection lab (`module-04-llm-security/visual/`), Layer 2 — and is on in the
 hardened agent regardless of flag.
 
 ## Prove it
