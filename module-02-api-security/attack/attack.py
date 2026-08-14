@@ -26,7 +26,16 @@ import json
 import sys
 import time
 
-import jwt
+# PyJWT is imported inside mint() rather than here, on purpose.
+#
+# The only thing in this file that needs it is token minting, which requires a
+# running app. --selftest exercises the pure judges and touches no token at all,
+# and the green wall promises "no AWS, no credentials, no cost" -- a student who
+# clones the repo and runs it should get eleven passes with nothing installed.
+# A module-level import broke that promise with a traceback on lab 2, which is
+# the worst possible first impression of the course.
+#
+# Install it when you reach the live attacks:  pip install -r requirements.txt
 
 SECRET = "lab-demo-secret-not-for-production"
 GOOD_AUD = "hwz-inference-api"
@@ -67,6 +76,15 @@ def judge_blind_request(audit_lines: list[str], token_id: str) -> bool:
 # TOKENS
 # ---------------------------------------------------------------------------
 def mint(aud: str, sub: str = "attacker") -> str:
+    try:
+        import jwt
+    except ImportError:
+        sys.exit(
+            "This attack needs PyJWT, which is not installed.\n"
+            "  pip install -r requirements.txt\n"
+            "(run that from module-02-api-security/attack)\n"
+            "You do not need it for --selftest, only for the live attacks."
+        )
     return jwt.encode({"sub": sub, "aud": aud}, SECRET, algorithm="HS256")
 
 

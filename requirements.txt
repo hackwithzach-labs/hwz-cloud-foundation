@@ -1,0 +1,13 @@
+# Everything the course needs, in one install.
+#
+#     pip install -r requirements.txt
+#
+# Nothing here is required for `python module-08-capstone/scan/scan.py --green-wall`.
+# Every selftest in this repo runs on the standard library alone, on purpose, so
+# a student can prove the code works before installing anything or touching AWS.
+#
+# You need these when you start running the labs for real:
+
+Flask>=3.0.0        # every visual lab (ports 5108 to 5116)
+PyJWT>=2.8.0        # module 02 live attacks: minting tokens for the API
+python-hcl2>=4.3.0  # tools/tflint.py: offline Terraform linting
