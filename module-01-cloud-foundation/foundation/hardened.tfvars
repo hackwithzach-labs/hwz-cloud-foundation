@@ -26,3 +26,4 @@ cloudtrail_multi_region        = true
 cloudtrail_log_file_validation = true
 cloudtrail_data_events         = true
 cloudtrail_use_kms             = true
+iam_scope_workload = true

@@ -52,6 +52,9 @@ module "iam" {
 
   name_prefix      = local.name_prefix
   deny_destructive = var.iam_deny_destructive
+  scope_workload   = var.iam_scope_workload
+  account_id       = local.account_id
+  region           = local.region
 }
 
 module "s3" {
@@ -91,3 +94,4 @@ module "observability" {
   name_prefix    = local.name_prefix
   retention_days = var.log_retention_days
 }
+

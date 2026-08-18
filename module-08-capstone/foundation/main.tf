@@ -44,6 +44,7 @@ module "foundation" {
   s3_versioning            = true
   vpc_flow_logs            = true
   iam_deny_destructive     = true
+  iam_scope_workload             = true
   kms_strict_key_policy    = true
   cloudtrail_multi_region  = true
   cloudtrail_log_file_validation    = true
@@ -87,4 +88,5 @@ resource "local_file" "posture" {
     "foundation-pinned" = true
   })
 }
+
 

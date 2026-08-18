@@ -61,6 +61,7 @@ module "foundation" {
   kms_strict_key_policy          = true
   kms_allow_cloudtrail           = true
   iam_deny_destructive           = true
+  iam_scope_workload             = true
   cloudtrail_multi_region        = true
   cloudtrail_log_file_validation = true
   cloudtrail_data_events         = true
@@ -82,3 +83,4 @@ module "api" {
   secret_arn                 = module.foundation.secret_arn
   allowed_model              = var.allowed_model
 }
+

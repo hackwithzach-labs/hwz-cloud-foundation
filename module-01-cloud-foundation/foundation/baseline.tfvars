@@ -27,3 +27,4 @@ cloudtrail_multi_region        = false       # only one region recorded
 cloudtrail_log_file_validation = false       # logs can be tampered undetected
 cloudtrail_data_events         = false       # object read/write not recorded
 cloudtrail_use_kms             = false       # trail logs unencrypted
+iam_scope_workload = false

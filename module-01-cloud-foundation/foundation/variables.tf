@@ -142,3 +142,8 @@ variable "cloudtrail_use_kms" {
   type        = bool
   default     = false
 }
+
+variable "iam_scope_workload" {
+  type    = bool
+  default = false
+}

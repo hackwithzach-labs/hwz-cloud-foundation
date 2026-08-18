@@ -53,6 +53,7 @@ module "foundation" {
   kms_strict_key_policy          = true
   kms_allow_cloudtrail           = true
   iam_deny_destructive           = true
+  iam_scope_workload             = true
   cloudtrail_multi_region        = true
   cloudtrail_log_file_validation = true
   cloudtrail_data_events         = true
@@ -117,3 +118,4 @@ output "app_log_group" {
   description = "The foundation app log group the Chapter 10 detection layer watches."
   value       = module.foundation.app_log_group
 }
+
