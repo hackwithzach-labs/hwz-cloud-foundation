@@ -38,17 +38,20 @@ module "foundation" {
 
   # Pinned. A capstone that could stand up a weak foundation by accident would
   # teach the opposite of the lesson.
-  s3_default_encryption            = true
+  s3_encryption            = true
   s3_block_public_access   = true
-  s3_enforce_tls              = true
+  s3_tls_only              = true
   s3_versioning            = true
+  sg_restrict_ingress      = true
   vpc_flow_logs            = true
-  iam_deny_destructive     = true
+  iam_scope_workload       = true
+  iam_destructive_deny     = true
+  kms_key_rotation         = true
   kms_strict_key_policy    = true
   cloudtrail_multi_region  = true
-  cloudtrail_log_file_validation    = true
+  cloudtrail_validation    = true
   cloudtrail_data_events   = true
-  cloudtrail_use_kms = true
+  cloudtrail_kms_encrypted = true
 }
 
 # ---------------------------------------------------------------------------
@@ -57,14 +60,12 @@ module "foundation" {
 module "api" {
   source = "../../module-02-api-security/foundation/modules/api"
 
-  name_prefix                = "${var.project}-${var.environment}"
-  project                    = var.project
-  region                     = var.region
-  vpc_id                     = module.foundation.vpc_id
-  private_subnet_ids         = module.foundation.private_subnet_ids
-  endpoint_security_group_id = module.foundation.endpoint_security_group_id
-  secret_arn                 = module.foundation.secret_arn
-  allowed_model              = var.allowed_model
+  project            = var.project
+  environment        = var.environment
+  region             = var.region
+  vpc_id             = module.foundation.vpc_id
+  private_subnet_ids = module.foundation.private_subnet_ids
+  kms_key_arn        = module.foundation.kms_key_arn
 }
 
 # ---------------------------------------------------------------------------
@@ -87,4 +88,3 @@ resource "local_file" "posture" {
     "foundation-pinned" = true
   })
 }
-
