@@ -51,6 +51,11 @@ The dry run prints every remediation and the exact AWS API call it makes, and
 changes nothing. Read it. Then `--commit` applies the fixes. It is idempotent, so
 running it again is safe. `LESSON.md` explains how the script works.
 
+If you changed `name_prefix` in your tfvars, pass it: `--name-prefix my-lab`.
+The script defaults to `<project>-lab`, which is what the stock tfvars produce,
+and it uses that prefix to scope the least-privilege IAM policy and to find the
+flow-logs role. A wrong prefix means a policy scoped to buckets you do not own.
+
 ## 4. Prove it is secure (same scan as step 2)
 
 ```bash
@@ -93,9 +98,17 @@ python3 fix/fix.py  --selftest     # proves the fix closes every finding the sca
 ```
 
 The scanner selftest runs the checks against a known-insecure and a known-secure
-fixture. The fix selftest applies the remediation to the insecure fixture and
-confirms the scanner then finds nothing, so you know the fix closes exactly what
-the scan opens before you run anything live.
+fixture. The fix selftest does three things: it confirms the scanner finds
+nothing after the fix, it checks that every remediation the dry run promises is
+backed by a real AWS call, and it runs the IAM wildcard rewrite against a fake
+client to prove that call does what it claims. All three run offline.
+
+The middle check earns its place. A remediation was once planned and never
+performed: the dry run listed the wildcard fix, `--commit` silently skipped it,
+and `scan.py` kept reporting the same HIGH finding however many times you ran
+the fix. Nothing in the repo caught it, because the old selftest cleared the
+flag by hand instead of asking whether any code cleared it. A plan is not a fix,
+and a test that checks the plan against itself proves nothing.
 
 ---
 

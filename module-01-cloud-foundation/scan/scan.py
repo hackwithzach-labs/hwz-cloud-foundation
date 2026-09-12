@@ -70,6 +70,25 @@ def check_iam(snap):
     return f
 
 
+def has_wildcard_allow(policy_doc):
+    """True if any statement Allows "*" or a service-wide action like s3:*.
+
+    This rule lives here, in the scanner, and fix.py imports it. It must not be
+    written twice. fix.py has to rewrite exactly the policies this rule flags,
+    so if the two ever drift the fix starts missing policies the scan still
+    reports, and the student gets a FAIL they cannot clear by running the fix.
+    That is not a hypothetical: it is the bug this function was added to close.
+    """
+    for st in policy_doc.get("Statement", []):
+        if st.get("Effect") != "Allow":
+            continue
+        acts = st.get("Action", [])
+        acts = [acts] if isinstance(acts, str) else acts
+        if any(a == "*" or a.endswith(":*") for a in acts):
+            return True
+    return False
+
+
 def check_kms(snap):
     f = []
     for k in snap.get("kms_keys", []):
@@ -164,15 +183,15 @@ def collect_live(project, region):
         if not name.startswith(project):
             continue
         wild = destructive_deny = False
+        # Inline policies only. Managed policies attached to the role are not
+        # read here, so a wildcard that arrives through an attached policy is
+        # invisible to this scan. The lab never attaches one; know the limit.
         for pn in iam.list_role_policies(RoleName=name).get("PolicyNames", []):
             doc = iam.get_role_policy(RoleName=name, PolicyName=pn)["PolicyDocument"]
-            for st in doc.get("Statement", []):
-                acts = st.get("Action", [])
-                acts = [acts] if isinstance(acts, str) else acts
-                if st.get("Effect") == "Allow" and any(a == "*" or a.endswith(":*") for a in acts):
-                    wild = True
-                if st.get("Effect") == "Deny":
-                    destructive_deny = True
+            if has_wildcard_allow(doc):
+                wild = True
+            if any(st.get("Effect") == "Deny" for st in doc.get("Statement", [])):
+                destructive_deny = True
         snap["iam_roles"].append({"name": name, "has_wildcard_allow": wild,
                                   "has_destructive_deny": destructive_deny})
 
