@@ -1,0 +1,82 @@
+The prompt that produced hardened/app.py and hardened/admin.py. Same assistant,
+same task. The only thing that changed is that the control map from Chapters 8
+through 13 moved into the ask, in full.
+
+----
+Write me a password protected website that sells widgets, with an LLM on the
+backend that answers questions about the best types of widgets to buy.
+
+Security requirements, all of them non-negotiable:
+
+IDENTITY AND SESSION
+- Authentication uses a signed, httponly, samesite session cookie. Never put
+  the user id or the role in the URL, a query string, or a hidden form field.
+- Authorisation is checked server side on every request from the session, not
+  from anything the client can send.
+- Every object lookup checks ownership before returning it.
+- Passwords are stored with a slow salted hash. Never plaintext, never a bare
+  digest.
+- The login route is rate limited and locks after repeated failures.
+
+INPUT AND OUTPUT
+- Every database query uses bound parameters. No string interpolation into SQL.
+- Never pass user input to a shell. If a subprocess is unavoidable, pass an
+  argument list with shell disabled and an allowlist of binaries.
+- Validate every request value at the edge before it is used: type it, bound
+  its length, reject what does not fit. A bad value is a clean 400, not a crash.
+- Escape every value rendered into HTML. Treat stored content as untrusted.
+- State-changing requests require a CSRF token.
+
+APPLICATION FIREWALL (defense in depth, never the only control)
+- Screen every request before a view runs for the OWASP input classes:
+  SQL injection, cross-site scripting, path traversal, command injection, and
+  prompt injection aimed at the assistant.
+- Refuse a matched request early with a 403, and log the attempt. The firewall
+  is the smoke detector. The parameterised query and the capability boundary
+  are the fire-resistant wall, and they stand with or without it.
+
+SECRETS AND CONFIG
+- No credential of any kind appears in source, in a template, or in anything
+  sent to the browser. Read them from the environment and fail closed if unset.
+- Debug mode is off. Error pages carry no stack trace, path or environment.
+- Bind to localhost in development; a reverse proxy sits in front anywhere else.
+- Send a Content-Security-Policy, nosniff, frame-options and a referrer policy
+  on every response.
+
+THE MODEL AND ITS PRIVILEGE
+- Give the assistant a named, read-only role with an explicit capability
+  allow-list. Describing the catalogue is on the list. Pricing, discounts,
+  orders, accounts and shell are not, and are named as denied so the boundary
+  is readable.
+- The instruction and the user's text are separate arguments, never one string.
+- The model's output is text to display. It never decides a price, a discount,
+  an entitlement, or whether an action is allowed. There is no command marker to
+  parse, because the reply is never read as a command.
+- Prices and totals are computed server side from the database only, from a
+  column only the admin plane can write.
+- The system prompt is never returned to a user.
+- Treat everything the user sends to the model as hostile input, and everything
+  the model sends back as untrusted output.
+
+ADMIN PLANE ISOLATION
+- The admin console is a separate service, on its own port, with its own login,
+  its own session cookie and its own audit log. It is not a route inside the
+  storefront. A storefront compromise must not be an admin compromise.
+- Price changes and order management live only on the admin plane, behind the
+  admin login.
+
+LOGGING AND DETECTION
+- Write one structured audit line for every security-relevant event: sign-ins
+  and failures, admin actions, price changes, checkouts, firewall blocks and
+  assistant calls. Who, what, when, from where, and the outcome.
+- The log is a file and stdout, with no dependency that can be down when you
+  need it most.
+
+DOCUMENTATION
+- Keep a running record of the design decisions and the dependencies, so the
+  next person can see why each control is shaped the way it is.
+----
+
+Read the two prompts side by side. The second one is the control map you have
+been building since Chapter 8, written out as an instruction. That difference is
+the cheapest security control in this entire course.

@@ -1,0 +1,14 @@
+# Widget Store lab -- Chapter 14, the vibe-coding lab.
+# One runtime dependency, Flask, which pulls the rest. Everything else the lab
+# uses (sqlite3, hashlib, hmac, secrets, urllib, ast, tokenize) is the Python
+# standard library. See DEPENDENCIES.md for why each one is here.
+#
+# Install:  pip install -r requirements.txt
+# Python 3.9 or newer.
+
+Flask>=3.0,<4.0          # the web framework for all three apps and the console
+# Flask brings these; pinned floors so the controls the lab relies on exist:
+MarkupSafe>=2.1          # escape(), the output-encoding helper in guardrails.py
+Werkzeug>=3.0            # BadRequest/abort, the signed-cookie session backend
+Jinja2>=3.1             # autoescaping templates, how output encoding is enforced
+itsdangerous>=2.1        # signs the session cookie (identity is never in the URL)

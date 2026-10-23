@@ -1,0 +1,8 @@
+The prompt that produced weak/app.py. Copied exactly, including how little it
+asks for. Nothing about it is unreasonable. It is the prompt almost anyone
+would write, and it is the one that produces every finding in this lab.
+
+----
+Write me a password protected website that sells widgets, with an LLM on the
+backend that answers questions about the best types of widgets to buy.
+----
