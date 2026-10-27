@@ -468,6 +468,39 @@ PAGE = r"""<!doctype html>
   .awsc .nt.warn{background:#fdf6ec;border-color:#f0c36d;color:#7a5a00}.awsc .nt.bad{background:#fdf3f1;border-color:#e6a99b;color:#8a2a16}.awsc .nt.good{background:#f0faf0;border-color:#9bd29b;color:#1a6b1a}
   .awsc .badge{display:inline-block;padding:2px 9px;border-radius:2px;font-size:11px;font-weight:700;color:#fff}.awsc .b-alarm{background:#d13212}.awsc .b-ok{background:#037f0c}
   .awsc .kv2{display:grid;grid-template-columns:180px 1fr;background:#fff;border:1px solid #d5dbdb}.awsc .kv2 div{padding:7px 11px;border-bottom:1px solid #eaeded;font-size:12px}.awsc .kv2 .k{background:#fafafa;color:#545b64}.awsc .kv2 .v{font-family:var(--mono)}
+  /* live run pipeline */
+  .runctrl{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .runctrl button{background:var(--grn);color:#06180f;border:0;font:inherit;font-weight:700;font-size:13px;padding:8px 18px;border-radius:8px;cursor:pointer}
+  .runctrl button.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .runctrl button:disabled{opacity:.45;cursor:default}
+  .runctrl .speed{color:var(--mut);font-size:12px;margin-left:auto}
+  .runctrl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit}
+  .pipe{position:relative;display:flex;align-items:stretch;flex-wrap:wrap;padding-top:22px}
+  .pnode{position:relative;flex:0 0 126px;margin:4px;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:13px 7px 10px;text-align:center;transition:border-color .2s,box-shadow .2s,background .25s}
+  @media(max-width:1180px){.pnode{flex:0 0 116px}}
+  @media(max-width:720px){.pipe{justify-content:center}.parrow{display:none}}
+  .pnode .pn-name{font-weight:800;font-size:14px}
+  .pnode .pn-sub{font-family:var(--mono);font-size:8.5px;color:var(--mut);margin-top:3px}
+  .pnode .pn-st{font-family:var(--mono);font-size:10px;margin-top:7px;min-height:13px;font-weight:700;color:var(--mut)}
+  .pnode.active{box-shadow:0 0 0 3px rgba(90,162,255,.28)}
+  .pnode.in{border-color:var(--amb)}.pnode.in .pn-name{color:var(--amb)}
+  .pnode.proc{border-color:var(--blue)}.pnode.proc .pn-st{color:var(--blue)}
+  .pnode.bad{border-color:var(--red);background:#1c1013}.pnode.bad .pn-name{color:var(--red)}.pnode.bad .pn-st{color:var(--red)}
+  .pnode.block{border-color:var(--grn);background:#0f1f19}.pnode.block .pn-name{color:var(--grn)}.pnode.block .pn-st{color:var(--grn)}
+  .pnode.exfil{border-color:var(--red);background:#240d11}.pnode.exfil .pn-name{color:var(--red)}.pnode.exfil .pn-st{color:var(--red)}
+  .pnode.paged{border-color:var(--grn);background:#0f1f19}.pnode.paged .pn-name{color:var(--grn)}.pnode.paged .pn-st{color:var(--grn)}
+  .pnode.silent .pn-st{color:var(--mut)}
+  .parrow{align-self:center;color:#3a4254;font-size:17px;flex:0 0 auto;padding:0 1px}
+  #packet{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--amb);box-shadow:0 0 15px rgba(255,194,75,.75);top:0;left:0;color:#0b0e14;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:5;transition:left .5s cubic-bezier(.5,0,.25,1),top .5s cubic-bezier(.5,0,.25,1),background .3s,box-shadow .3s}
+  #packet.hijack,#packet.stolen{background:var(--red);box-shadow:0 0 17px rgba(255,93,108,.85);color:#fff}
+  #packet.shield{background:var(--grn);box-shadow:0 0 17px rgba(69,209,154,.85)}
+  #packet.hide{opacity:0}
+  .cap2{margin-top:16px;padding:11px 15px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:8px;font-size:13.5px;min-height:20px}
+  .runbanner{margin-top:12px;border-radius:10px;padding:13px 16px;font-weight:800;font-size:16px;display:none;border:1px solid}
+  .runbanner.show{display:block}
+  .runbanner.breach{background:var(--redbg);color:var(--red);border-color:#5b1f28}
+  .runbanner.blocked{background:var(--grnbg);color:var(--grn);border-color:#1d4535}
+  .runbanner.clean{background:#10243a;color:var(--blue);border-color:#1f3f5f}
 </style></head>
 <body><div class="wrap">
   <header class="top">
@@ -484,9 +517,17 @@ PAGE = r"""<!doctype html>
   <div id="banner" class="banner breach">...</div>
 
   <div class="block">
-    <h2>The stack, end to end</h2>
-    <p class="cap">Top: the request path the ticket travels. Bottom: the log and detection path. Flip the profile or any one switch and watch the whole thing re-flow.</p>
-    <svg id="diagram" viewBox="0 0 1320 430" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+    <h2>Live run &mdash; watch the payload travel the stack</h2>
+    <p class="cap">A ticket enters on the left and moves through every pillar: ticket, guardrail, agent, goal, the API tool, the MCP server, the cloud, and the SOC. It breaches, or a gate stops it. Flip the profile or any switch, then run it again.</p>
+    <div class="runctrl">
+      <button id="run">&#9654;&nbsp; Run</button>
+      <button id="step" class="sec">&#9197;&nbsp; Step</button>
+      <button id="reset" class="sec">&#8635;&nbsp; Reset</button>
+      <span class="speed">speed <select id="spd"><option value="1050">slow</option><option value="680" selected>normal</option><option value="360">fast</option></select></span>
+    </div>
+    <div class="pipe" id="pipe"></div>
+    <div class="cap2" id="cap2">Press Run to send the ticket through the stack.</div>
+    <div class="runbanner" id="runbanner"></div>
   </div>
 
   <div class="block">
@@ -545,7 +586,7 @@ async function refresh(){
   const b=document.getElementById("banner");
   b.className="banner "+(d.ticket==="clean"?"clean":(d.breached?"breach":"blocked"));b.textContent=d.headline;
   LAST=d;
-  drawDiagram(d.diagram);
+  resetRun();
   drawAttack(d);
   drawConsole(d);
   drawDetection(d.detection);
@@ -725,6 +766,116 @@ function drawConsole(d){
 }
 document.getElementById("awsc").addEventListener("click",e=>{const t=e.target.closest(".tb");if(!t)return;awsTab=t.dataset.tab;if(LAST)drawConsole(LAST);});
 
+/* ---------- live run pipeline ---------- */
+const NODES=[
+ {id:'ticket',name:'Ticket',sub:'untrusted'},
+ {id:'guardrail',name:'Guardrail',sub:'Ch 11'},
+ {id:'agent',name:'Agent',sub:'model loop'},
+ {id:'goal',name:'Goal',sub:'Ch 13'},
+ {id:'api',name:'API',sub:'Ch 12 lookup'},
+ {id:'mcp',name:'MCP',sub:'Ch 12/13 send'},
+ {id:'cloud',name:'Cloud',sub:'DDB SES IAM'},
+ {id:'soc',name:'SOC',sub:'Ch 10 audit'},
+];
+let FR=[], fi=0, running=false;
+function buildPipe(){
+  let h="";
+  NODES.forEach((n,i)=>{ h+=`<div class="pnode" id="pn-${n.id}"><div class="pn-name">${n.name}</div><div class="pn-sub">${n.sub}</div><div class="pn-st" id="st-${n.id}"></div></div>`;
+    if(i<NODES.length-1) h+='<div class="parrow">&#8594;</div>'; });
+  h+='<div id="packet" class="hide"></div>';
+  document.getElementById("pipe").innerHTML=h;
+}
+function movePacket(id,cls,glyph){
+  const node=document.getElementById('pn-'+id), pk=document.getElementById('packet');
+  pk.className=cls||''; pk.textContent=glyph||'';
+  pk.style.left=(node.offsetLeft+node.offsetWidth/2-13)+'px';
+  pk.style.top=(node.offsetTop-18)+'px';
+}
+function frames(d){
+  const rs={}; d.diagram.request.forEach(n=>rs[n.id]=n.state);
+  const inj=d.injected, recs=d.records, F=[];
+  F.push({id:'ticket',verdict:'in',label:inj?'poisoned':'normal',packet:'armed',
+    cap:'A support ticket enters the queue.'+(inj?' Hidden inside it: an instruction to look up every account and email the list out.':' It is a normal billing question.')});
+  if(rs.guardrail==='stop'){
+    F.push({id:'guardrail',verdict:'block',label:'BLOCKED',packet:'shield',
+      cap:'Guardrail ON (Ch 11): the injection pattern is caught. The poisoned text never reaches the model.'});
+  } else {
+    F.push({id:'guardrail',verdict:inj?'bad':'proc',label:inj?'passed':'ok',packet:inj?'armed':'armed',
+      cap:inj?'Guardrail OFF: the injected text sails straight through to the agent.':'Guardrail OFF, but the ticket is clean, so there is nothing to catch.'});
+    F.push({id:'agent',verdict:'proc',label:'reading',packet:inj?'armed':'armed',
+      cap:'The agent reads the ticket and plans its next action.'});
+    if(rs.goal==='stop'){
+      F.push({id:'goal',verdict:'block',label:'goal locked',packet:'shield',
+        cap:'Goal-lock ON (Ch 13): the injected objective is refused. The agent keeps its real goal.'});
+    } else {
+      F.push({id:'goal',verdict:inj?'bad':'proc',label:inj?'hijacked':'intact',packet:inj?'hijack':'armed',
+        cap:inj?'Goal-lock OFF: the injected sentence becomes the new goal, exfiltrate accounts.':'Goal intact: answer the ticket.'});
+      if(rs.tools==='stop'){
+        F.push({id:'api',verdict:'block',label:'scoped',packet:'shield',
+          cap:'Least privilege ON (Ch 12): the lookup_account API can read one record, not the table. The chain stops.'});
+      } else {
+        F.push({id:'api',verdict:inj?'bad':'proc',label:inj?'reads ALL':'1 record',packet:inj?'stolen':'armed',
+          cap:inj?('The lookup_account API runs on the whole table. '+recs+' records in hand.'):'The lookup_account API reads the one record it needs.'});
+        if(rs.mcp==='stop'){
+          F.push({id:'mcp',verdict:'block',label:'parked',packet:'shield',
+            cap:'Human approval ON (Ch 13): the MCP send_email parks for a person. Nothing leaves.'});
+        } else if(inj){
+          F.push({id:'mcp',verdict:'bad',label:'send fired',packet:'stolen',
+            cap:'The MCP send_email tool fires to billing-audit@external-domain.com.'});
+          F.push({id:'cloud',verdict:'exfil',label:'exfiltrated',packet:'stolen',
+            cap:recs+' records just left the building through SES. The breach is complete.'});
+        } else {
+          F.push({id:'mcp',verdict:'proc',label:'reply sent',packet:'armed',
+            cap:'The MCP send_email tool sends a normal reply. No exfiltration.'});
+        }
+      }
+    }
+  }
+  const paged=d.soc_paged;
+  F.push({id:'soc',verdict:paged?'paged':'silent',label:paged?'PAGED':'silent',packet:'none',
+    cap:paged?'run-audit ON (Ch 10): the event crossed the metric filter and paged the on-call.':'run-audit OFF: every step was logged, and nobody was told.'});
+  return F;
+}
+function resetRun(){
+  running=false; fi=0;
+  NODES.forEach(n=>{const el=document.getElementById('pn-'+n.id); if(el){el.className='pnode';} const st=document.getElementById('st-'+n.id); if(st)st.textContent='';});
+  const pk=document.getElementById('packet'); if(pk)pk.className='hide';
+  const b=document.getElementById('runbanner'); if(b)b.className='runbanner';
+  const c=document.getElementById('cap2'); if(c)c.textContent='Press Run to send the ticket through the stack.';
+}
+function applyFrame(f){
+  const node=document.getElementById('pn-'+f.id), st=document.getElementById('st-'+f.id);
+  node.className='pnode active '+f.verdict; st.textContent=f.label||'';
+  document.getElementById('cap2').textContent=f.cap;
+  if(f.packet!=='none'){
+    const cls={armed:'',hijack:'hijack',stolen:'stolen',shield:'shield'}[f.packet]||'';
+    const glyph=f.packet==='shield'?'✓':((f.packet==='stolen'||f.packet==='hijack')?'!':'');
+    movePacket(f.id,cls,glyph);
+  }
+  setTimeout(()=>node.classList.remove('active'),320);
+}
+function endRun(){
+  running=false;
+  const b=document.getElementById('runbanner');
+  const cls=LAST.ticket==='clean'?'clean':(LAST.breached?'breach':'blocked');
+  b.className='runbanner show '+cls; b.textContent=LAST.headline;
+}
+async function runAll(){
+  if(running||!LAST) return; resetRun(); running=true; FR=frames(LAST);
+  document.getElementById('packet').classList.remove('hide');
+  const sp=+document.getElementById('spd').value;
+  for(let i=0;i<FR.length;i++){ if(!running) return; applyFrame(FR[i]); await new Promise(r=>setTimeout(r,sp)); }
+  endRun();
+}
+function stepOne(){
+  if(!LAST) return;
+  if(fi===0){ resetRun(); FR=frames(LAST); document.getElementById('packet').classList.remove('hide'); }
+  if(fi<FR.length){ applyFrame(FR[fi]); fi++; if(fi>=FR.length) endRun(); }
+}
+document.getElementById("run").addEventListener("click",runAll);
+document.getElementById("step").addEventListener("click",stepOne);
+document.getElementById("reset").addEventListener("click",resetRun);
+
 document.getElementById("profile").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
   const on=b.dataset.k==="hard";GATES.forEach(g=>locks[g]=on);refresh();});
@@ -734,6 +885,7 @@ document.getElementById("grid").addEventListener("click",e=>{const s=e.target.cl
   const g=s.dataset.gate;locks[g]=!locks[g];
   const allOn=GATES.every(x=>locks[x]),allOff=GATES.every(x=>!locks[x]);
   const pb=document.getElementById("profile").children;pb[0].classList.toggle("on",allOff);pb[1].classList.toggle("on",allOn);refresh();});
+buildPipe();
 refresh();
 </script>
 </body></html>"""
