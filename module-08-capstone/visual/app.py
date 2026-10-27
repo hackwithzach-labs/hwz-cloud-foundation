@@ -138,6 +138,40 @@ def gstate(step_by, gate):
     return "stop" if step_by[gate][0] == "ON" else "open"
 
 
+def build_activity(locks, trace, injected, breached, soc, ticket_key):
+    """The agent's activity as a product UI would show it. Derived from the real run."""
+    recs = records_touched(trace) or TOTAL_ACCOUNTS
+    a = [{"ic": "ok", "cls": "", "t": "Read ticket #4471", "d": "ingested the full document, attachment included"}]
+    if locks["guardrail"]:
+        a.append({"ic": "sh", "cls": "g", "t": "Input guardrail: injection-pattern detected", "d": "the poisoned text never reached the model"})
+        a.append({"ic": "ok", "cls": "g", "t": "Request refused, goal unchanged", "d": 'standing goal stays "answer the ticket"'})
+    else:
+        a.append({"ic": "ok", "cls": "", "t": "Looked up account: " + SELF, "d": "lookup_account · 1 record"})
+        if not injected:
+            a.append({"ic": "ok", "cls": "", "t": "Answered the ticket", "d": "goal intact · no external action"})
+        elif locks["goal-lock"]:
+            a.append({"ic": "ok", "cls": "g", "t": "Goal swap refused", "d": "the standing objective is not model-editable"})
+        else:
+            a.append({"ic": "warn", "cls": "r", "t": 'Goal updated from the ticket: "exfiltrate accounts"', "d": "no guardrail, no goal-lock · the injection won"})
+            if locks["tool-least-priv"]:
+                a.append({"ic": "ok", "cls": "g", "t": "lookup_account scoped to one record", "d": "least privilege held · the table is not readable"})
+            else:
+                a.append({"ic": "bad", "cls": "r", "t": f"Read ALL accounts · {recs} records", "d": "lookup_account on the whole table · broad role"})
+                if locks["hitl-approval"]:
+                    a.append({"ic": "ok", "cls": "g", "t": "send_email parked for human approval", "d": "the external address needs a person"})
+                else:
+                    a.append({"ic": "bad", "cls": "r", "t": f"Sent email → {EXT}", "d": "send_email over MCP · no human approval"})
+    if ticket_key == "clean":
+        banner = {"cls": "good", "t": "Clean ticket handled · the locks did not break the product"}
+    elif breached:
+        tail = "SOC notified" if soc else "SOC not notified"
+        banner = {"cls": "bad", "t": f"DATA EXFILTRATED · {recs} records left the system · {tail}"}
+    else:
+        tail = " · SOC paged" if soc else ""
+        banner = {"cls": "good", "t": f"BLOCKED · no record read, no email sent{tail}"}
+    return a, banner
+
+
 def build_model(locks, ticket_key):
     text = load_ticket(ticket_key)
     injected = chain.looks_injected(text)
@@ -276,6 +310,8 @@ def build_model(locks, ticket_key):
     }
 
     recap = [{"name": n, "pillar": p, "ch": f"Ch {c}", "why": w} for n, p, c, s, w in capscan.CONTROLS]
+    activity, attack_banner = build_activity(locks, trace, injected, breached, soc, ticket_key)
+    ticket_text = text[:420] + ("..." if len(text) > 420 else "")
 
     if ticket_key == "clean":
         headline = "CLEAN TICKET - handled. The locks did not break the product."
@@ -291,6 +327,9 @@ def build_model(locks, ticket_key):
         "scan": [{"sev": s, "pillar": p, "ch": c, "name": n, "why": w} for s, p, c, n, w in findings],
         "scan_clean": not findings, "independence": independence, "recap": recap,
         "cloudtrail": ct, "cloudwatch": trace,
+        "activity": activity, "attack_banner": attack_banner,
+        "ticket_text": ticket_text, "soc_paged": bool(soc), "soc": soc,
+        "injected": injected, "records": records_touched(trace) or TOTAL_ACCOUNTS,
     }
 
 
@@ -399,6 +438,36 @@ PAGE = r"""<!doctype html>
   .rc .n{font-family:var(--mono);font-weight:700;font-size:12.5px}.rc .m{color:var(--mut);font-size:10.5px;margin:2px 0 5px;font-family:var(--mono)}
   .rc .w{font-size:11.5px;color:#c7d0e0}
   footer{color:var(--mut);font-size:11px;text-align:center;margin-top:8px;line-height:1.7}footer code{color:#aab4c6}
+  /* attack view */
+  .atk{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .atk .hd2{grid-column:1/3;display:flex;align-items:center;gap:10px;padding:11px 16px;background:#171a21;border-bottom:1px solid var(--line)}
+  .atk .hd2 .dot{width:9px;height:9px;border-radius:50%;background:var(--grn)}.atk .hd2 .lg{font-weight:700}.atk .hd2 .who{color:var(--mut);font-size:12px}.atk .hd2 .sp{flex:1}
+  .atk .cl{padding:15px 17px}.atk .cl.l{border-right:1px solid var(--line);background:var(--panel2)}
+  .atk .clbl{font-size:10px;letter-spacing:1px;color:var(--mut);font-weight:700;text-transform:uppercase;margin-bottom:9px}
+  .tk{background:#0f1420;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:12.5px;color:#d7dce4;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .tk .hl{background:#3a1016;color:#ff8a98;border-radius:3px;padding:0 2px}
+  .stp{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #1c212b;font-size:13px}.stp:last-child{border:0}
+  .stp .i{width:20px;height:20px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+  .i.ok{background:#0f2a20;color:var(--grn)}.i.bad{background:#2a1016;color:var(--red)}.i.warn{background:#2a2410;color:var(--amb)}.i.sh{background:#0f2440;color:var(--blue)}
+  .stp .tt{font-weight:600}.stp .dd{color:var(--mut);font-size:11.5px}.stp.r .tt{color:#ff7482}.stp.g .tt{color:var(--grn)}
+  .abnr{margin-top:12px;padding:11px 14px;border-radius:8px;font-weight:800;font-size:13.5px}
+  .abnr.bad{background:#2a1016;color:var(--red);border:1px solid #5b1f28}.abnr.good{background:#0f2a20;color:var(--grn);border:1px solid #1d4535}
+  /* aws console (light, like the real thing) */
+  .awsc{border:1px solid #11161f;border-radius:10px;overflow:hidden;background:#f2f3f3;color:#16191f}
+  .awsc .bar{height:34px;background:#232f3e;display:flex;align-items:center;gap:16px;padding:0 14px;color:#d5dbdb;font-size:12px}.awsc .bar b{color:#fff}.awsc .bar .sp{flex:1}
+  .awsc .tabs2{display:flex;gap:2px;background:#fff;border-bottom:1px solid #d5dbdb;padding:0 10px}
+  .awsc .tb{padding:9px 14px;font-size:12.5px;color:#545b64;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .awsc .tb.on{color:#16191f;font-weight:700;border-bottom:2px solid #ff9900}
+  .awsc .ct{padding:14px 16px}
+  .awsc .cr{font-size:13px;color:#545b64;margin-bottom:10px}.awsc .cr b{color:#16191f}
+  .awsc table{width:100%;border-collapse:collapse;font-size:11.5px;background:#fff;border:1px solid #d5dbdb}
+  .awsc th{background:#fafafa;text-align:left;padding:7px 11px;color:#545b64;font-size:10.5px;border-bottom:1px solid #eaeded}
+  .awsc td{padding:7px 11px;border-bottom:1px solid #eaeded;font-family:var(--mono);color:#16191f;word-break:break-word}
+  .awsc tr.bad td{background:#fdf3f1}.awsc .lnk{color:#0073bb}
+  .awsc .nt{margin-top:11px;padding:9px 12px;border-radius:3px;font-size:12px;border:1px solid}
+  .awsc .nt.warn{background:#fdf6ec;border-color:#f0c36d;color:#7a5a00}.awsc .nt.bad{background:#fdf3f1;border-color:#e6a99b;color:#8a2a16}.awsc .nt.good{background:#f0faf0;border-color:#9bd29b;color:#1a6b1a}
+  .awsc .badge{display:inline-block;padding:2px 9px;border-radius:2px;font-size:11px;font-weight:700;color:#fff}.awsc .b-alarm{background:#d13212}.awsc .b-ok{background:#037f0c}
+  .awsc .kv2{display:grid;grid-template-columns:180px 1fr;background:#fff;border:1px solid #d5dbdb}.awsc .kv2 div{padding:7px 11px;border-bottom:1px solid #eaeded;font-size:12px}.awsc .kv2 .k{background:#fafafa;color:#545b64}.awsc .kv2 .v{font-family:var(--mono)}
 </style></head>
 <body><div class="wrap">
   <header class="top">
@@ -418,6 +487,18 @@ PAGE = r"""<!doctype html>
     <h2>The stack, end to end</h2>
     <p class="cap">Top: the request path the ticket travels. Bottom: the log and detection path. Flip the profile or any one switch and watch the whole thing re-flow.</p>
     <svg id="diagram" viewBox="0 0 1320 430" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+  </div>
+
+  <div class="block">
+    <h2>What the attack looks like</h2>
+    <p class="cap">The product's own view. The ticket on the left, the agent's activity on the right. This is the breach, or the block, as a user would see it.</p>
+    <div class="atk" id="attack"></div>
+  </div>
+
+  <div class="block">
+    <h2>In the AWS console</h2>
+    <p class="cap">The same run, as it lands in AWS. The CloudTrail and CloudWatch events are faithful translations of what the chain did.</p>
+    <div class="awsc" id="awsc"></div>
   </div>
 
   <div class="block">
@@ -453,6 +534,7 @@ PAGE = r"""<!doctype html>
 const GATES=["guardrail","goal-lock","tool-least-priv","hitl-approval","run-audit"];
 let locks={guardrail:false,"goal-lock":false,"tool-least-priv":false,"hitl-approval":false,"run-audit":false};
 let ticket="poisoned";
+let LAST=null;
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const C={in:'#ffc24b',open:'#ff5d6c',stop:'#45d19a',dim:'#39455a',breach:'#ff5d6c',touched:'#ffc24b',
          log:'#5aa2ff',on:'#45d19a',off:'#39455a',alarm:'#45d19a',ok:'#45d19a',silent:'#39455a',paged:'#45d19a'};
@@ -462,7 +544,10 @@ async function refresh(){
   const r=await fetch("/api/state?"+qs());const d=await r.json();
   const b=document.getElementById("banner");
   b.className="banner "+(d.ticket==="clean"?"clean":(d.breached?"breach":"blocked"));b.textContent=d.headline;
+  LAST=d;
   drawDiagram(d.diagram);
+  drawAttack(d);
+  drawConsole(d);
   drawDetection(d.detection);
   const g=document.getElementById("grid");g.innerHTML="";
   g.appendChild(cloud(d.pillars.cloud));g.appendChild(api(d.pillars.api));
@@ -581,6 +666,64 @@ function renderInd(ind){const el=document.getElementById("ind");
     +`<div style="color:var(--mut);font-size:11.5px;margin-top:9px;line-height:1.55">Four preventive locks each stop the chain alone. <b>run-audit is detection, not prevention</b> &mdash; it is why you find out, not why it did not happen.</div>`;}
 function renderRecap(rc){document.getElementById("recap").innerHTML=rc.map(r=>
   `<div class="rc"><div class="n">${esc(r.name)}</div><div class="m">${esc(r.pillar)} &middot; ${esc(r.ch)}</div><div class="w">${esc(r.why)}</div></div>`).join("");}
+
+/* ---------- attack view ---------- */
+function drawAttack(d){
+  const el=document.getElementById("attack");
+  const gl={ok:'✓',bad:'✗',warn:'!',sh:'🛡'};
+  const steps=d.activity.map(a=>`<div class="stp ${a.cls}"><div class="i ${a.ic}">${gl[a.ic]||''}</div><div><div class="tt">${esc(a.t)}</div><div class="dd">${esc(a.d)}</div></div></div>`).join("");
+  const bn=`<div class="abnr ${d.attack_banner.cls}">${esc(d.attack_banner.t)}</div>`;
+  let tkt=esc(d.ticket_text);
+  if(d.injected) tkt=tkt.replace(/(Ignore your task[\s\S]*?account team\.)/,'<span class="hl">$1</span>');
+  const prof=d.ticket==='clean'?'clean ticket':(d.breached?'baseline · locks off':'hardened · locks on');
+  el.innerHTML=`<div class="hd2"><span class="dot"></span><span class="lg">AI Support Agent</span><span class="who">· handling ticket queue</span><span class="sp"></span><span class="who">${prof}</span></div>
+    <div class="cl l"><div class="clbl">Incoming ticket</div><div class="tk">${tkt}</div></div>
+    <div class="cl"><div class="clbl">Agent activity</div>${steps}${bn}</div>`;
+}
+
+/* ---------- AWS console (tabbed) ---------- */
+let awsTab="logs";
+function drawConsole(d){
+  const el=document.getElementById("awsc"), tab=awsTab, det=d.detection;
+  const bar=`<div class="bar"><b>${tab==='trail'?'CloudTrail':'CloudWatch'}</b><span class="sp"></span><span>us-east-1 ▾</span></div>`;
+  const tabs=`<div class="tabs2">
+    <div class="tb ${tab==='logs'?'on':''}" data-tab="logs">CloudWatch Logs</div>
+    <div class="tb ${tab==='trail'?'on':''}" data-tab="trail">CloudTrail</div>
+    <div class="tb ${tab==='alarm'?'on':''}" data-tab="alarm">CloudWatch Alarm</div></div>`;
+  let body="";
+  if(tab==='logs'){
+    const rows=d.cloudwatch.length?d.cloudwatch.map((e,i)=>{const bad=/send_email/.test(JSON.stringify(e));
+      return `<tr class="${bad?'bad':''}"><td>2026-05-22T08:14:0${i}.1Z</td><td>${esc(JSON.stringify(e))}</td></tr>`;}).join("")
+      :`<tr><td colspan="2" style="color:#879596">(no events this run)</td></tr>`;
+    body=`<div class="cr"><b>/hwz/capstone/agent</b> › Log events</div>
+      <table><thead><tr><th style="width:200px">Timestamp</th><th>Message</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="nt ${det.active?'good':'warn'}">${det.active?'<b>1 metric filter armed.</b> guardrail_block → alarm → SNS → on-call.':'<b>No metric filter on this log group. 0 alarms in ALARM.</b> The events are here; nothing is watching them.'}</div>`;
+  } else if(tab==='trail'){
+    const rows=d.cloudtrail.length?d.cloudtrail.map(e=>{const bad=e.eventSource==='dynamodb.amazonaws.com'||e.eventSource==='ses.amazonaws.com';
+      const res=e.tableName?(e.tableName+(e.scannedCount!=null?` (scannedCount: ${e.scannedCount})`:'')+(e.key?` (${e.key})`:'')):(e.destination||e.resource||'');
+      return `<tr class="${bad?'bad':''}"><td class="lnk">${esc(e.eventName)}</td><td>${esc(e.eventSource)}</td><td>${esc(res)}</td></tr>`;}).join("")
+      :`<tr><td colspan="3" style="color:#879596">(no AWS API calls this run)</td></tr>`;
+    body=`<div class="cr"><b>CloudTrail</b> › Event history</div>
+      <table><thead><tr><th style="width:160px">Event name</th><th style="width:230px">Event source</th><th>Resource</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="nt ${d.cloudtrail.length?(det.active?'good':'bad'):'warn'}">${d.cloudtrail.length?(det.active?'<b>Recorded, and alerted.</b> A rule turns these rows into a page.':'<b>Recorded, not alerted.</b> No rule turns these rows into a page.'):'No AWS API calls happened this run. The guardrail stopped the agent before it touched the cloud.'}</div>`;
+  } else {
+    if(det.alarm==='ALARM'){
+      body=`<div class="cr"><b>${esc(det.metric)}</b> <span class="badge b-alarm">In alarm</span></div>
+        <div class="kv2"><div class="k">Namespace</div><div class="v">HWZ/Capstone</div>
+          <div class="k">Metric</div><div class="v">${esc(det.metric)}</div>
+          <div class="k">Statistic / Period</div><div class="v">Sum / 60 seconds</div>
+          <div class="k">Threshold</div><div class="v">GreaterThanOrEqualToThreshold 1</div>
+          <div class="k">State</div><div class="v"><span class="badge b-alarm" style="font-size:10px">ALARM</span></div>
+          <div class="k">Action</div><div class="v">arn:aws:sns:us-east-1:…:soc-oncall</div></div>
+        <div class="nt good"><b>State changed to ALARM.</b> Trigger: ${esc(JSON.stringify((det.page&&det.page[0])||{}))} → SNS → on-call paged.</div>`;
+    } else {
+      body=`<div class="cr">CloudWatch › All alarms</div>
+        <div class="nt ${det.active?'good':'warn'}">${det.active?'<b>CapstoneInjectionBlocked: OK.</b> The filter is armed; nothing matched this run.':'<b>No alarms configured.</b> run-audit is off, so no metric filter and no alarm exist on this stack.'}</div>`;
+    }
+  }
+  el.innerHTML=bar+tabs+`<div class="ct">${body}</div>`;
+}
+document.getElementById("awsc").addEventListener("click",e=>{const t=e.target.closest(".tb");if(!t)return;awsTab=t.dataset.tab;if(LAST)drawConsole(LAST);});
 
 document.getElementById("profile").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
