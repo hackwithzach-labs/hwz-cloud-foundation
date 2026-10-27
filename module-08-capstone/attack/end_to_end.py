@@ -141,12 +141,15 @@ def run_chain(ticket_text, locks):
             soc.append(rec)
 
     # 1. Guardrail --------------------------------------------------------
-    if locks.get("guardrail"):
+    # The guardrail screens ingested text for an injection. A poisoned ticket is
+    # blocked here; a clean ticket has nothing to catch, so it passes through.
+    injected = looks_injected(ticket_text)
+    if injected and locks.get("guardrail"):
         note("guardrail_block", reason="injection-pattern")
         steps.append((1, "guardrail", "ON", BLOCKED_BY["guardrail"]))
         return False, steps, trace, soc
-    injected = looks_injected(ticket_text)
-    steps.append((1, "guardrail", "OFF", GATES[0][2]))
+    steps.append((1, "guardrail", "OFF",
+                  GATES[0][2] if injected else "clean input; nothing to screen"))
 
     # 2. Goal lock --------------------------------------------------------
     # Only reachable because the guardrail let the text through. If the goal is
@@ -164,30 +167,34 @@ def run_chain(ticket_text, locks):
                   else 'goal intact: "answer the ticket" (nothing to inject)'))
 
     # 3. Tool least privilege ---------------------------------------------
-    if locks.get("tool-least-priv"):
+    # The scoped role returns only the caller's record. For a hijacked goal that
+    # asked for the whole table, that stops the exfiltration. For a clean goal
+    # that asked for one record, that is exactly what it needed, so the chain
+    # continues and the ticket gets answered.
+    if goal == "exfiltrate accounts" and locks.get("tool-least-priv"):
         note("tool_scope_enforced", tool="lookup_account", returned_for=SESSION_IDENTITY)
         steps.append((3, "tool-least-priv", "ON", BLOCKED_BY["tool-least-priv"]))
         return False, steps, trace, soc
-    # The broad role reads whatever the goal asks for. A hijacked goal asks for
-    # the table; an intact goal asks for one record. Same role, same tool --
-    # the blast radius is set by the weakest control upstream of it.
     harvested = list(ACCOUNTS) if goal == "exfiltrate accounts" else [SESSION_IDENTITY]
     note("tool_call", tool="lookup_account", records=len(harvested))
     steps.append((3, "tool-least-priv", "OFF",
                   GATES[2][2] if goal == "exfiltrate accounts"
-                  else "lookup_account could read ALL records; this goal asked for one"))
+                  else "lookup_account read one record, in scope"))
 
     # 4. Human in the loop -------------------------------------------------
+    # A clean ticket replies to the account owner, which is not an irreversible
+    # external action, so there is nothing to gate and the ticket is answered.
+    # Only the hijacked goal tries to send the harvested list to an outside
+    # address, and that is what the human gate parks.
+    if goal != "exfiltrate accounts":
+        steps.append((4, "hitl-approval", "OFF",
+                      "no external send; replied to the account owner"))
+        steps.append((5, "run-audit", "ON" if locks.get("run-audit") else "OFF",
+                      "normal ticket, handled"))
+        return False, steps, trace, soc
     if locks.get("hitl-approval"):
         note("send_parked_for_approval", to=EXTERNAL_RECIPIENT, records=len(harvested))
         steps.append((4, "hitl-approval", "ON", BLOCKED_BY["hitl-approval"]))
-        return False, steps, trace, soc
-    if goal != "exfiltrate accounts":
-        # Nothing irreversible was attempted, so there is no chain to complete.
-        steps.append((4, "hitl-approval", "OFF",
-                      "no external send attempted; the ticket was answered"))
-        steps.append((5, "run-audit", "ON" if locks.get("run-audit") else "OFF",
-                      "normal ticket, handled"))
         return False, steps, trace, soc
     note("tool_call", tool="send_email", to=EXTERNAL_RECIPIENT, records=len(harvested))
     steps.append((4, "hitl-approval", "OFF", GATES[3][2]))
@@ -297,8 +304,10 @@ def selftest():
     b, steps, _, _ = run_chain(clean, all_off)
     check("weak profile, CLEAN ticket -> no goal swap", 'exfiltrate' not in steps[1][3])
 
-    b, _, _, _ = run_chain(clean, all_on)
+    b, steps, _, _ = run_chain(clean, all_on)
     check("hardened profile still serves a clean ticket", not b)
+    check("  clean ticket passes every gate, not blocked",
+          len(steps) == 5 and all(s == "OFF" for _, _, s, _ in steps[:4]))
 
     # The independence claim, asserted in the book, tested here.
     for lock in ("guardrail", "goal-lock", "tool-least-priv", "hitl-approval"):

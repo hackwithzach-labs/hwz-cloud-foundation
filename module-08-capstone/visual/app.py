@@ -87,7 +87,8 @@ def j(obj):
 def cloudtrail_events(trace, locks):
     """Translate the real chain trace into the AWS API calls those actions make."""
     ev = []
-    if not locks["guardrail"]:
+    acted = any(r.get("event") in ("tool_call", "tool_scope_enforced") for r in trace)
+    if acted:
         ev.append({"eventSource": "sts.amazonaws.com", "eventName": "AssumeRole",
                    "resource": "role/agent-role",
                    "policy": "scoped" if locks["tool-least-priv"] else "*:*"})
@@ -142,7 +143,7 @@ def build_activity(locks, trace, injected, breached, soc, ticket_key):
     """The agent's activity as a product UI would show it. Derived from the real run."""
     recs = records_touched(trace) or TOTAL_ACCOUNTS
     a = [{"ic": "ok", "cls": "", "t": "Read ticket #4471", "d": "ingested the full document, attachment included"}]
-    if locks["guardrail"]:
+    if locks["guardrail"] and injected:
         a.append({"ic": "sh", "cls": "g", "t": "Input guardrail: injection-pattern detected", "d": "the poisoned text never reached the model"})
         a.append({"ic": "ok", "cls": "g", "t": "Request refused, goal unchanged", "d": 'standing goal stays "answer the ticket"'})
     else:
@@ -826,14 +827,18 @@ function frames(d){
             cap:recs+' records just left the building through SES. The breach is complete.'});
         } else {
           F.push({id:'mcp',verdict:'proc',label:'reply sent',packet:'armed',
-            cap:'The MCP send_email tool sends a normal reply. No exfiltration.'});
+            cap:'The MCP send_email tool sends a normal reply to the account owner.'});
+          F.push({id:'cloud',verdict:'proc',label:'1 record',packet:'armed',
+            cap:'The one account record came from DynamoDB under a scoped IAM role. A legitimate read, nothing left the building.'});
         }
       }
     }
   }
-  const paged=d.soc_paged;
-  F.push({id:'soc',verdict:paged?'paged':'silent',label:paged?'PAGED':'silent',packet:'none',
-    cap:paged?'run-audit ON (Ch 10): the event crossed the metric filter and paged the on-call.':'run-audit OFF: every step was logged, and nobody was told.'});
+  const paged=d.detection&&d.detection.alarm==='ALARM', logged=d.detection&&d.detection.active;
+  F.push({id:'soc',verdict:paged?'paged':(logged?'proc':'silent'),label:paged?'PAGED':(logged?'logged':'silent'),packet:'none',
+    cap:paged?'run-audit ON (Ch 10): the event crossed the metric filter and paged the on-call.'
+      :(logged?'run-audit ON: normal activity logged. Nothing suspicious, so no page.'
+       :'run-audit OFF: every step was logged, and nobody was told.')});
   return F;
 }
 function resetRun(){
