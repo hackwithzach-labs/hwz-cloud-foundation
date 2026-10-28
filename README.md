@@ -10,6 +10,17 @@
 
 > FULL COHORT MATERIAL. This repository is licensed to enrolled HackWithZach Full cohort members only. It is not part of the Light tier. Do not share, post, or redistribute it. See `LICENSE.md`.
 
+## Community and the lab walkthroughs
+
+Jump into the cohort Discord: https://hackwithzach.com/discord. Questions between calls, wins, and whatever we are on this week.
+
+Every lab ships a plain-English walkthrough PDF in its `dist/` folder, each ending with an About page and the full disclaimer:
+
+- The Capstone (Chapter 15): `module-08-capstone/dist/Capstone-Agentic-AI-Support-Walkthrough.pdf`
+- The Widget Store (Chapter 14): `module-07-vibe-coding/widget-store/dist/Widget-Store-Security-Lab-Walkthrough.pdf`
+
+---
+
 ## What this repo is
 
 The complete build repository for the Cloud and AI Security Engineer program. You build the whole system yourself, one module at a time. You do not read about security here. You prove it with your own hands.
