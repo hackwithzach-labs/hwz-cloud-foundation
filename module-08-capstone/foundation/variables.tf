@@ -55,5 +55,5 @@ variable "run_audit_enabled" {
 
 variable "allowed_model" {
   type    = string
-  default = "anthropic.claude-3-haiku-20240307-v1:0"
+  default = "anthropic.claude-haiku-5-5"
 }

@@ -17,7 +17,7 @@
 terraform {
   required_version = ">= 1.5"
   required_providers {
-    aws   = { source = "hashicorp/aws", version = ">= 5.0" }
+    aws   = { source = "hashicorp/aws", version = "~> 6.0" }
     local = { source = "hashicorp/local", version = ">= 2.4" }
   }
 }
@@ -38,18 +38,18 @@ module "foundation" {
 
   # Pinned. A capstone that could stand up a weak foundation by accident would
   # teach the opposite of the lesson.
-  s3_default_encryption            = true
-  s3_block_public_access   = true
-  s3_enforce_tls              = true
-  s3_versioning            = true
-  vpc_flow_logs            = true
-  iam_deny_destructive     = true
+  s3_default_encryption          = true
+  s3_block_public_access         = true
+  s3_enforce_tls                 = true
+  s3_versioning                  = true
+  vpc_flow_logs                  = true
+  iam_deny_destructive           = true
   iam_scope_workload             = true
-  kms_strict_key_policy    = true
-  cloudtrail_multi_region  = true
-  cloudtrail_log_file_validation    = true
-  cloudtrail_data_events   = true
-  cloudtrail_use_kms = true
+  kms_strict_key_policy          = true
+  cloudtrail_multi_region        = true
+  cloudtrail_log_file_validation = true
+  cloudtrail_data_events         = true
+  cloudtrail_use_kms             = true
 }
 
 # ---------------------------------------------------------------------------
