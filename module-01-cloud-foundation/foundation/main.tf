@@ -39,12 +39,13 @@ module "vpc" {
 module "kms" {
   source = "./modules/kms"
 
-  name_prefix       = local.name_prefix
-  account_id        = local.account_id
-  region            = local.region
-  strict_key_policy = var.kms_strict_key_policy
-  allow_cloudtrail  = var.kms_allow_cloudtrail
-  workload_role_arn = module.iam.role_arn
+  name_prefix           = local.name_prefix
+  account_id            = local.account_id
+  region                = local.region
+  strict_key_policy     = var.kms_strict_key_policy
+  allow_cloudtrail      = var.kms_allow_cloudtrail
+  allow_cloudwatch_logs = var.kms_allow_cloudwatch_logs
+  workload_role_arn     = module.iam.role_arn
 }
 
 module "iam" {

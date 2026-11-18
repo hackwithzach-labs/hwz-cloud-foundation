@@ -113,6 +113,12 @@ variable "kms_allow_cloudtrail" {
   default     = false
 }
 
+variable "kms_allow_cloudwatch_logs" {
+  description = "Add the CloudWatch Logs service statement to the KMS key policy so log groups under this lab's prefix can be encrypted with the key. Off for Chapter 8 (its log groups are not KMS encrypted). Chapter 10 pins it true because its Lambda and ECS log groups are."
+  type        = bool
+  default     = false
+}
+
 variable "iam_deny_destructive" {
   description = "Attach a deny policy blocking destructive actions to the workload role. WEAK = false. STRONG = true."
   type        = bool
