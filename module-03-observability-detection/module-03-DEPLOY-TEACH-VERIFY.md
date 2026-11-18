@@ -189,6 +189,26 @@ terraform --% apply -var-file=hardened.tfvars -var alert_email=zach@hackwithzach
 **Then immediately: open the inbox and click the SNS confirmation link.**
 Until you do, `hwz-detect` keeps reporting a HIGH gap — on purpose.
 
+**Two errors this apply used to throw, and why they are gone.** Older copies of
+the repo failed here with `CreateLogGroup ... AccessDeniedException: The
+specified KMS key does not exist or is not allowed to be used` on the Lambda and
+ECS log groups, then `PutMetricFilter ... ResourceNotFoundException: The
+specified log group does not exist` on the filters. Both are teachable:
+
+1. A log group encrypted with a customer managed key needs the key policy to
+   name CloudWatch Logs (`logs.<region>.amazonaws.com`) as a principal. Root
+   having admin on the key does not cover a service. This module pins
+   `kms_allow_cloudwatch_logs = true` on the foundation, which adds that one
+   statement, scoped to this account, this region and the `hwz-lab` log groups.
+2. A metric filter can only attach to a log group that already exists, and
+   Terraform only waits when it can see the dependency. The producers module
+   now hands the detection layer the log group names read off the log group
+   resources, so every filter waits for its group.
+
+If you hit either error on an older copy: discard any local edits to those
+files, pull the latest, and run the same apply again. Nothing from the failed
+run needs cleaning up first.
+
 ---
 
 ## PHASE 4 — Verify WIRED (CLI + Console + re-attack)

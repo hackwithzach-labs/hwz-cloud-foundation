@@ -4,7 +4,8 @@
 # the lesson lives. Baseline = broad (root can do anything, no CloudTrail grant).
 # Hardened = scoped to the workload role AND grants CloudTrail so encrypted
 # trail logs actually work. The old course was missing this CloudTrail grant,
-# which is why turning on trail encryption blew up.
+# which is why turning on trail encryption blew up. The same rule applies to
+# CloudWatch Logs: a log group encrypted with this key needs its own grant.
 ###############################################################################
 
 locals {
@@ -61,6 +62,36 @@ locals {
     }
   }
 
+  # CloudWatch Logs grant, added when allow_cloudwatch_logs=true. Chapter 10
+  # (module-03) declares its Lambda and ECS log groups with this key. Without
+  # this statement CreateLogGroup fails with "The specified KMS key does not
+  # exist or is not allowed to be used", because CloudWatch Logs calls KMS as
+  # its own regional service principal, and a service principal only gets what
+  # the key policy names. Root having admin rights does not cover it.
+  #
+  # Least privilege: data-plane actions only, and only when the encryption
+  # context names a log group in THIS account and region under THIS lab's
+  # prefix. Another account's log groups, another region, or a group outside
+  # the lab cannot use the key.
+  cloudwatch_logs_statement = {
+    Sid       = "AllowCloudWatchLogsEncrypt"
+    Effect    = "Allow"
+    Principal = { Service = "logs.${var.region}.amazonaws.com" }
+    Action = [
+      "kms:Encrypt*", "kms:Decrypt*", "kms:ReEncrypt*",
+      "kms:GenerateDataKey*", "kms:Describe*"
+    ]
+    Resource = "*"
+    Condition = {
+      ArnLike = {
+        "kms:EncryptionContext:aws:logs:arn" = [
+          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/${var.name_prefix}/*",
+          "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/lambda/${var.name_prefix}-*",
+        ]
+      }
+    }
+  }
+
   # Terraform requires both arms of a conditional to be the same type, and these
   # statement lists differ in length and shape on purpose. The concat-with-empty
   # pattern below picks one list without ever asking Terraform to unify them.
@@ -71,6 +102,7 @@ locals {
   all_statements = concat(
     local.base_statements,
     var.allow_cloudtrail ? [local.cloudtrail_statement] : [],
+    var.allow_cloudwatch_logs ? [local.cloudwatch_logs_statement] : [],
   )
 }
 

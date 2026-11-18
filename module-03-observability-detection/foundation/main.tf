@@ -60,6 +60,12 @@ module "foundation" {
   cloudtrail_log_file_validation = true
   cloudtrail_data_events         = true
   cloudtrail_use_kms             = true
+
+  # The producers layer encrypts the Lambda and ECS log groups with the
+  # foundation key, so the key policy must let CloudWatch Logs use it. Pinned
+  # here (not in the tfvars) so baseline and hardened share one key policy and
+  # the hardened plan still shows zero changes under module.foundation.
+  kms_allow_cloudwatch_logs = true
 }
 
 # --------------------------------------------------------------------------

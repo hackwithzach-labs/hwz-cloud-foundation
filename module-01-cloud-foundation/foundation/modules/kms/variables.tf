@@ -14,6 +14,12 @@ variable "allow_cloudtrail" {
   default     = false
 }
 
+variable "allow_cloudwatch_logs" {
+  description = "Add the CloudWatch Logs service statement so log groups under this lab's prefix can be encrypted with this key."
+  type        = bool
+  default     = false
+}
+
 variable "workload_role_arn" {
   description = "The workload role that should be allowed to use the key when the policy is strict."
   type        = string
