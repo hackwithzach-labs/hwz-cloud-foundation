@@ -27,11 +27,11 @@ locals {
   scoped_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Sid = "S3ProjectData",  Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:ListBucket", "s3:GetBucketLocation"], Resource = ["arn:aws:s3:::${var.name_prefix}-*", "arn:aws:s3:::${var.name_prefix}-*/*"] },
+      { Sid = "S3ProjectData", Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:ListBucket", "s3:GetBucketLocation"], Resource = ["arn:aws:s3:::${var.name_prefix}-*", "arn:aws:s3:::${var.name_prefix}-*/*"] },
       { Sid = "SecretsProject", Effect = "Allow", Action = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"], Resource = ["arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:${var.name_prefix}-*"] },
-      { Sid = "KmsProject",     Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"], Resource = ["arn:aws:kms:${var.region}:${var.account_id}:key/*"] },
-      { Sid = "LogsProject",    Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"], Resource = ["arn:aws:logs:${var.region}:${var.account_id}:log-group:${var.name_prefix}-*"] },
-      { Sid = "BedrockInvoke",  Effect = "Allow", Action = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"], Resource = ["*"] },
+      { Sid = "KmsProject", Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey"], Resource = ["arn:aws:kms:${var.region}:${var.account_id}:key/*"] },
+      { Sid = "LogsProject", Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams"], Resource = ["arn:aws:logs:${var.region}:${var.account_id}:log-group:${var.name_prefix}-*"] },
+      { Sid = "BedrockInvoke", Effect = "Allow", Action = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"], Resource = ["*"] },
       { Sid = "CloudTrailRead", Effect = "Allow", Action = ["cloudtrail:LookupEvents"], Resource = ["*"] }
     ]
   })
