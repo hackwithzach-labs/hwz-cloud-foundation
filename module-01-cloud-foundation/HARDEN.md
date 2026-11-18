@@ -20,6 +20,8 @@ Baseline used the classic wide-open key policy where the account root can do any
 
 Why it matters: a key everyone can use is not a control, it is decoration. And this is the exact grant the old course was missing. Turning on trail encryption without granting CloudTrail on the key is what made the old stack fail. Here the grant and the encryption flip on together, on purpose, so you see the dependency instead of tripping over it.
 
+Chapter 10 adds one more grant of the same kind. Its Lambda and ECS log groups are encrypted with this key, so it sets `kms_allow_cloudwatch_logs = true`, which lets the CloudWatch Logs service use the key for this lab's log groups in this account and region only. Chapter 8 leaves it off because its own log groups are not encrypted with the key.
+
 ## 3. IAM: stop pretending you will tighten it later
 
 Flag: `iam_deny_destructive`
