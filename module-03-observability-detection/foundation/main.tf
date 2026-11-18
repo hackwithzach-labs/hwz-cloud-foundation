@@ -18,7 +18,7 @@
 terraform {
   required_version = ">= 1.5"
   required_providers {
-    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+    aws = { source = "hashicorp/aws", version = "~> 6.0" }
     # Packages the Lambda producer's source into a deployment zip at plan time,
     # so the function ships from the repo with no build step and no S3 bucket.
     archive = { source = "hashicorp/archive", version = "~> 2.4" }
