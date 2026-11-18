@@ -113,8 +113,8 @@ def mock_model_complete(prompt, max_tokens):
 
 def real_model_complete(prompt, max_tokens):
     """Optional REAL Bedrock call. Opt in with HWZ_USE_REAL_MODEL=true, and only
-    in the hardened profile. Pinned to the cheapest model (Claude 3 Haiku by
-    default); max_tokens is already clamped by safety_breaker() before we get
+    in the hardened profile. Pinned to the cheapest model (Claude Haiku 5.5 by
+    default, called through the US cross-Region inference profile); max_tokens is already clamped by safety_breaker() before we get
     here. boto3 is imported lazily so the mock path needs no AWS dependency.
 
     The call goes out through the Bedrock interface endpoint the Terraform root
@@ -123,7 +123,10 @@ def real_model_complete(prompt, max_tokens):
     import os
     import boto3
 
-    model_id = os.environ.get("HWZ_MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
+    # Current Claude models on Bedrock are invoked through an inference profile
+    # (us.<model id>), not the bare model id. Terraform prints the right value
+    # as the model_invoke_id output.
+    model_id = os.environ.get("HWZ_MODEL_ID", "us.anthropic.claude-haiku-5-5")
     region = os.environ.get("AWS_REGION", "us-east-1")
     client = boto3.client("bedrock-runtime", region_name=region)
     payload = {
@@ -137,7 +140,8 @@ def real_model_complete(prompt, max_tokens):
     usage = data.get("usage", {})
     in_tok = usage.get("input_tokens", len(prompt.split()))
     out_tok = usage.get("output_tokens", 0)
-    # Haiku on-demand pricing (approx): $0.00025 / 1k input, $0.00125 / 1k output.
+    # Illustrative per-token cost for the cost-cap lesson, not a quote. Check
+    # aws.amazon.com/bedrock/pricing for the current Haiku rate.
     cost = in_tok * 0.00000025 + out_tok * 0.00000125
     return text, in_tok + out_tok, cost
 

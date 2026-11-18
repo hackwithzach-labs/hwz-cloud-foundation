@@ -24,5 +24,5 @@ variable "region" {
 variable "allowed_model" {
   description = "The single Bedrock foundation model the API role may invoke."
   type        = string
-  default     = "anthropic.claude-3-haiku-20240307-v1:0"
+  default     = "anthropic.claude-haiku-5-5"
 }

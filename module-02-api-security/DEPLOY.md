@@ -8,7 +8,7 @@ Everything in Chapter 8's `DEPLOY.md` about the AWS bootstrap, the sandbox accou
 
 ## Part 0: what you will spend
 
-The foundation resources are the same pennies as Chapter 8, plus one new standing charge: the Bedrock interface endpoint, billed per hour it exists (roughly a few cents an hour, a bit over a dollar a day if you forget it). There are no NAT gateways by design. A single real model call to Claude 3 Haiku with a tiny token ceiling costs a fraction of a cent. Apply at the start of a session, destroy at the end, and set the budget alarm from Chapter 8 so there are no surprises. Remember the rule: a budget alarm alerts, it does not hard-stop. Your real guardrail is the destroy command and the always-on breaker in `app/config.py`.
+The foundation resources are the same pennies as Chapter 8, plus one new standing charge: the Bedrock interface endpoint, billed per hour it exists (roughly a few cents an hour, a bit over a dollar a day if you forget it). There are no NAT gateways by design. A single real model call to Claude Haiku 5.5 with a tiny token ceiling costs a fraction of a cent. Apply at the start of a session, destroy at the end, and set the budget alarm from Chapter 8 so there are no surprises. Remember the rule: a budget alarm alerts, it does not hard-stop. Your real guardrail is the destroy command and the always-on breaker in `app/config.py`.
 
 ## Part 1: prerequisites
 
@@ -32,23 +32,22 @@ pip install -r app/requirements.txt
 
 3. You have already run the local loop from `RUNBOOK.md` and understand the four controls. The cloud step below runs the app HARDENED only. You never deploy the weak profile against a real model.
 
-## Part 2: enable Bedrock model access
+## Part 2: confirm Bedrock model access
 
-Bedrock does not let you invoke a foundation model until you have explicitly enabled access to it in the account. This is a one-time console step per account.
+Since October 2025, Bedrock turns on every serverless model in commercial Regions by default; the old Model access page no longer grants anything. Anthropic models add one step: the account has to submit a one-time use-case form before the first call. Access is controlled with IAM and SCPs instead, which is exactly what the role in this chapter does.
 
 1. In the AWS console, open Amazon Bedrock in your region (`us-east-1` matches the defaults).
-2. In the left nav, open Model access, then Manage model access.
-3. Enable Anthropic Claude 3 Haiku. Access is usually granted immediately.
+2. Open the Chat playground and pick Claude Haiku 5.5. If the console asks for Anthropic use-case details, submit the form once. In an AWS Organization, submitting it from the management account covers every member account.
 
-If you skip this, the real call below fails with an AccessDenied that names the model, and that error is itself the lesson: model access is a deliberate grant, not a default.
+If you skip the form, the real call below fails with an AccessDenied that names the model. Read that error closely: the model is on, but nobody has said what the account will use it for. Model access is still a deliberate grant, it just moved from a console toggle to a form plus IAM.
 
 ## Part 2b: see a real Bedrock call, naked, at the command line
 
-Before wrapping it in anything, invoke the model directly and read the raw answer. A "Bedrock call" is one InvokeModel request: model id + prompt + max_tokens in, a completion and a token count out, authenticated by your short-lived login and billed a fraction of a cent. The `--cli-binary-format raw-in-base64-out` flag lets you pass the body as plain JSON.
+Before wrapping it in anything, invoke the model directly and read the raw answer. Note the `us.` in front of the model id: current Claude models are called through a cross-Region inference profile, which may serve the request from us-east-1, us-east-2 or us-west-2. The bare model id is rejected for on-demand calls. A "Bedrock call" is one InvokeModel request: model id + prompt + max_tokens in, a completion and a token count out, authenticated by your short-lived login and billed a fraction of a cent. The `--cli-binary-format raw-in-base64-out` flag lets you pass the body as plain JSON.
 
 ```bash
 aws bedrock-runtime invoke-model \
-  --model-id anthropic.claude-3-haiku-20240307-v1:0 \
+  --model-id us.anthropic.claude-haiku-5-5 \
   --cli-binary-format raw-in-base64-out \
   --region us-east-1 \
   --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":60,"messages":[{"role":"user","content":[{"type":"text","text":"In one sentence, what is least privilege?"}]}]}' \
@@ -132,9 +131,9 @@ Type `yes`. When it finishes, everything is gone except the KMS key, which enter
 
 If `terraform apply` fails with access denied, the CLI identity is missing a permission; in the sandbox, confirm it has `AdministratorAccess` and that `aws sts get-caller-identity` shows the right account.
 
-If the real call in Part 6 returns AccessDenied naming the model, you have not enabled Bedrock model access (Part 2), or your CLI identity cannot invoke it. Enable Haiku and retry.
+If the real call in Part 6 returns AccessDenied naming the model, the account has not submitted the Anthropic use-case form (Part 2), or your CLI identity cannot invoke it. Submit the form and retry.
 
-If the real call returns a ValidationException about the body, confirm your region matches the model and that `HWZ_MODEL_ID` (default Claude 3 Haiku) is available in that region.
+If the real call returns a ValidationException about the body, confirm `HWZ_MODEL_ID` is the inference profile id from `terraform output model_invoke_id` (default `us.anthropic.claude-haiku-5-5`), not the bare model id. If it names a model that reached end of life, you will see ResourceNotFoundException instead.
 
 If the call is slow or returns a throttling error, that is Bedrock rate-limiting a brand-new account; wait and retry a single request. Do not loop it.
 

@@ -33,9 +33,9 @@ import json
 BACKEND = os.environ.get("HWZ_BACKEND", "sim").lower()
 MODEL_ID = os.environ.get(
     "HWZ_MODEL_ID",
-    "anthropic.claude-3-haiku-20240307-v1:0",  # Bedrock id; the course default
+    "us.anthropic.claude-haiku-5-5",  # Bedrock inference profile; the course default
 )
-ANTHROPIC_MODEL = os.environ.get("HWZ_ANTHROPIC_MODEL", "claude-3-5-haiku-latest")
+ANTHROPIC_MODEL = os.environ.get("HWZ_ANTHROPIC_MODEL", "claude-haiku-5-5")
 
 _EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
 

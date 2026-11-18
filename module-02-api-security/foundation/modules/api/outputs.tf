@@ -16,3 +16,8 @@ output "api_role_name" {
   description = "Name of the API workload role, for policy attachments in later pillars."
   value       = aws_iam_role.api.name
 }
+
+output "model_invoke_id" {
+  description = "The id the app passes to bedrock-runtime as modelId (HWZ_MODEL_ID): the inference profile, not the bare model."
+  value       = local.inference_profile_id
+}

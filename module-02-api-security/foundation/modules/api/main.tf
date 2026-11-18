@@ -70,12 +70,39 @@ resource "aws_iam_role" "api" {
   tags               = { Project = var.project }
 }
 
+# Since 2025, current Claude models on Bedrock are not invoked by their bare
+# model id in your own Region. On-demand calls go through a cross-Region
+# inference profile (us.<model>), which can route the request to any Region in
+# its geography. IAM has to allow BOTH halves: the profile in your Region, and
+# the model in every Region the profile can route to. The condition on the
+# second statement means the model can only be reached THROUGH that one
+# profile, never called directly. Still one model, still no wildcard.
+data "aws_caller_identity" "current" {}
+
+locals {
+  inference_profile_id  = "${var.inference_geo}.${var.allowed_model}"
+  inference_profile_arn = "arn:aws:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:inference-profile/${local.inference_profile_id}"
+}
+
 data "aws_iam_policy_document" "api_perms" {
   statement {
-    sid       = "InvokeOneModelFamily"
+    sid       = "InvokeOneInferenceProfile"
     actions   = ["bedrock:InvokeModel"]
-    resources = ["arn:aws:bedrock:${var.region}::foundation-model/${var.allowed_model}"]
+    resources = [local.inference_profile_arn]
   }
+
+  statement {
+    sid       = "InvokeOneModelOnlyViaThatProfile"
+    actions   = ["bedrock:InvokeModel"]
+    resources = [for r in var.inference_regions : "arn:aws:bedrock:${r}::foundation-model/${var.allowed_model}"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "bedrock:InferenceProfileArn"
+      values   = [local.inference_profile_arn]
+    }
+  }
+
   statement {
     sid       = "ReadOwnSecret"
     actions   = ["secretsmanager:GetSecretValue"]

@@ -42,7 +42,19 @@ variable "secret_arn" {
 }
 
 variable "allowed_model" {
-  description = "The single Bedrock foundation model the API role may invoke. One model, not a wildcard: an over-broad bedrock:InvokeModel is how a compromised app starts calling models you never budgeted for."
+  description = "The single Bedrock foundation model the API role may invoke. One model, not a wildcard: an over-broad bedrock:InvokeModel is how a compromised app starts calling models you never budgeted for. Claude 3 Haiku (the old default) reached end of life on Bedrock in us-east-1 on Sep 10, 2026."
   type        = string
-  default     = "anthropic.claude-3-haiku-20240307-v1:0"
+  default     = "anthropic.claude-haiku-5-5"
+}
+
+variable "inference_geo" {
+  description = "Prefix of the cross-Region inference profile the app calls: us, eu, apac or global. The app's model id is <geo>.<allowed_model>."
+  type        = string
+  default     = "us"
+}
+
+variable "inference_regions" {
+  description = "Every Region the inference profile can route to. The model must be allowed in each, or calls fail at random with AccessDenied. The us profile from us-east-1 routes to these three."
+  type        = list(string)
+  default     = ["us-east-1", "us-east-2", "us-west-2"]
 }
